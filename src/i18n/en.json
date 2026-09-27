@@ -277,5 +277,12 @@
     "polynomial-approximation": "Polynomial Approximation",
     "best-approximation": "Best Approximation",
     "interpolation": "Interpolation Theory"
+  },
+  "hero": {
+    "eyebrow": "AI MATH COACH",
+    "subtitle": "Write how you think. See how you understand.",
+    "body": "Every reasoning step you write is checked, explained and visualised with interactive models.",
+    "cta": "Start exploring",
+    "features": "Step-by-step reasoning · 3D visuals · AI guidance"
   }
 }

@@ -144,11 +144,12 @@ async function main() {
 
   console.log(`E2E cylinder coach @ ${BASE} (coach mode: ${COACH_MODE})`);
 
-  await step('home page shows the AI Math Coach entry point', async () => {
+  await step('legacy /coach is no longer linked from home but loads by direct URL', async () => {
     await send('Page.navigate', { url: `${BASE}/` });
-    await waitFor(`!!document.querySelector('a[href="/coach"]')`, 'coach link', 20_000);
-    await evaluate(`document.querySelector('a[href="/coach"]').click()`);
-    await waitFor(`location.pathname === '/coach'`, 'navigate to /coach');
+    await waitFor(`!!document.querySelector('a[href="/canvas"]')`, 'home hero', 20_000);
+    assert.equal(await evaluate(`document.querySelectorAll('a[href="/coach"]').length`), 0, 'no legacy CTA on home');
+    await send('Page.navigate', { url: `${BASE}/coach` });
+    await waitFor(`location.pathname === '/coach' && !!document.querySelector('[aria-current="step"]')`, 'direct /coach', 20_000);
     await evaluate(HELPERS);
     await js.stageIs('S1');
   });

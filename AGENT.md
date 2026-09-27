@@ -1,7 +1,7 @@
 # AGENT.md — Technical handoff
 
 Operational memory for the next coding agent. Product requirements: [docs/PRODUCT_SPEC.md](docs/PRODUCT_SPEC.md) **v0.7** (Vietnamese; hidden internal reasoning graph and learner-row explanations, preserving engine IDs, Voice, authentication and history). The code is the source of technical truth.
-Last updated: 2026-09-27 (learner graph UI hidden; current implementation/results/limitations in §16. §14–15 record prior verification; Voice/auth configuration in §15 remains valid; `/coach` remains legacy/REG-01).
+Last updated: 2026-09-27 (optional demo discovery implemented; current change/results in §17; hidden-graph UI and engine invariants in §16. §14–15 record prior verification; Voice/auth configuration in §15 remains valid; `/coach` remains legacy/REG-01).
 
 ## 1. Product goal and verified POC scope
 
@@ -602,3 +602,48 @@ E2E_BASE_URL=http://127.0.0.1:4292 node scripts/e2e-graph-localization.mjs
 Nếu dùng `E2E_SCREENSHOT_DIR`, tạo thư mục trước. Chờ lazy 3D/ResizeObserver thay vì assert ngay sau confirm/chuyển tab; không bỏ assertions hoặc bypass login. Tài khoản/cấu hình v0.6 giữ ở §15.3–15.6. Tiếp tục từ mã hiện tại; không dựng lại engine, không xóa graph contracts/specs để ẩn UI. Việc còn mở: ESLint tooling, SR/thiết bị thật, chuyên gia, TTS thật/quyền dữ liệu trẻ và auth sản phẩm/TLS. Chỉ xử lý khi có yêu cầu/phê duyệt tương ứng, không tự suy diễn đã nghiệm thu.
 
 Các tiến trình mock/dev/preview do lượt v0.7 khởi động đã được dừng sau kiểm tra; không dừng server của người dùng.
+
+
+## 17. Khám phá “Kịch bản demo” tùy chọn — 27/09/2026
+
+### 17.1 Giao diện và dữ liệu
+
+Nút cạnh bộ chọn đề mẫu tại `problem_input`; không tự mở, không hiện trong reasoning/F8/summary. Hộp thoại portal với nền tối mờ, bốn thẻ, một `aria-pressed` active, đề đầy đủ, các bước theo thứ tự và nút copy riêng. Đáp án `<details>` thu gọn khi mở hoặc đổi kịch bản. “Dùng đề này” chỉ điền textarea rồi đóng, không submit. Bộ chọn đề mẫu giữ nguyên.
+
+Bốn fixture có tỉ số chính xác 4, 1/2, 4, 9; cặp đường kính phải qua cả `r₁ = 6 : 2 = 3 cm` và `r₂ = 12 : 2 = 6 cm`. Mỗi bước được kiểm qua parser → runTurn → validator, bao gồm mọi kết quả trung gian và đơn vị cm²/cm³/dm²/dm³. Dùng cú pháp hiện có π, ·, ², :, / và chỉ số dưới; không cần mở rộng grammar hoặc sửa solver. Không phát hiện cú pháp không hỗ trợ trong bốn fixture này. Không dùng bộ bước sai của Case C hay dự đoán sai REG như lời giải mẫu đúng.
+
+Copy dùng Clipboard API, chỉ truyền một string đề hoặc bước; thông báo `role=status` thành công/thất bại, không giả thành công khi quyền bị từ chối. Không API hoặc mutation session khi mở/chọn/copy/đóng. Demo là tài liệu tham khảo, không được coi là bằng chứng độc lập hoặc tự động đưa cả lời giải vào phiên.
+
+Focus vào Close khi mở; Tab/Shift+Tab giữ trong dialog, Escape đóng, trả focus về nút mở, nền `#root` inert và khóa scroll body rồi khôi phục. Thẻ là button hỗ trợ phím mặc định. Nội dung cuộn riêng, header/footer cố định; animation 180 ms chỉ khi không yêu cầu reduced motion. Không dependency mới.
+
+### 17.2 Tệp và giới hạn thay đổi
+
+- `src/data/canvas/demoScenarios.ts` (mới): bốn đề, bước mẫu, đáp án, tỉ số tái dùng; không JSX.
+- `src/data/canvas/demoScenarios.test.ts` (mới): bốn test qua engine thực, exact intermediate values/ratio, status valid, nguyên văn từng bước, giới hạn độ dài đề.
+- `src/components/canvas/DemoScenarios.tsx` (mới): trigger/portal dialog, selected cards, copy/feedback, focus/inert/scroll/reduced-motion, chỉ callback điền đề.
+- `src/components/canvas/ProblemStage.tsx`: import và đặt nút cạnh sample selector; giữ form/submit/parser.
+- `src/index.css`: animation scoped `.demo-dialog`, reduced-motion.
+- `scripts/e2e-canvas.mjs`: thêm một bước kiểm bốn kịch bản/copy/selection/answer reset/clipboard failure/keyboard/mobile; snapshot toàn bộ store dev bất biến, zero fetch, use chỉ textarea. Enter CDP cần `text: '\r'` như helper bàn phím cũ; lần chạy đầu thất bại do thiếu ký tự này, đã sửa helper và chạy lại đầy đủ, không hạ assertions.
+- `docs/PRODUCT_SPEC.md`: chỉ bổ sung §23.4 cho demo-discovery UI trong v0.7; không thay F1–F8, contracts, validator, graph hoặc nghiệm thu toán.
+- `AGENT.md`: cập nhật sau kiểm chứng.
+
+Working tree bắt đầu sạch ở main `46e4a5d`; không sửa engine `src/lib/reasoning`, server, store, routes, auth/Voice/Three.js hoặc `.env`. Output `dist` do build được dọn và khôi phục đúng baseline sạch, không để artifact build trong diff; cần build lại khi chạy preview. Không commit/push. Chỉ dừng mock/dev/preview do lượt này khởi động.
+
+### 17.3 Kết quả thực tế
+
+| Kiểm tra | Kết quả |
+|---|---|
+| `npm test` | **130/130 đạt**: 126 cũ + 4 fixture mới; tất cả bước và kết quả trung gian đúng xác định |
+| `npx --no-install tsc -b` | Đạt |
+| `npm run build` | Đạt; cảnh báo chunk >500 kB vẫn có |
+| Canvas dev | **28/28 đạt**, gồm modal mới + mọi kiểm tra graph inspector, Ca A/B/C/REG, F8, Voice, login, keyboard cũ |
+| Canvas production | **22/22 đạt**, không lỗi trang; modal và hồi quy cũ đạt |
+| `npm run lint` | Không chạy được: `eslint: not found` (exit 127), không coi là đạt |
+
+Backend mock :8897, Vite dev :4292, production preview :4291; không provider thật, không đọc/in/sửa API key. Lệnh browser: `E2E_BASE_URL=http://127.0.0.1:4292 E2E_COACH_MODE=ai E2E_BUILD_MODE=dev E2E_CDP_PORT=9335 E2E_SCREENSHOT_DIR=/tmp/demo-shots npm run test:e2e:canvas`; production dùng :4291, port CDP 9336 và bỏ E2E_BUILD_MODE. Browser script dùng chung fixture mới, giữ mọi assertion toán/safety cũ.
+
+Đã xem ảnh thật `/tmp/demo-shots/demo-modal-desktop.png` và `demo-modal-mobile.png`: desktop 1500 px, mobile 390 px; một thẻ active rõ, nội dung/copy/Close trong khung, scroll nội dung không tràn ngang. Browser kiểm Tab/Shift+Tab trap, Enter chọn thẻ, Escape restore, inert, reset answer, exact copy từng mục, clipboard failure, reduced-motion và no session mutation/no requests. Clipboard write được spy/mock để xác minh chính xác đối số, chưa nghiệm thu clipboard hệ điều hành/quyền trên các browser thật. Chưa kiểm screen reader hoặc WCAG toàn diện. Voice dùng mock im lặng; native headless có 0 giọng Việt, chưa nghiệm thu âm thanh thật. Không chạy lại offline, `/coach` hoặc homepage localization trong lượt này; kết quả lịch sử/giới hạn ở §16 giữ nguyên, không coi là bằng chứng mới.
+
+Log: `/tmp/demo-{unit,typecheck,build,lint,browser,prod-browser}.log`. Không có cú pháp kịch bản nào cần fallback/LLM; mở modal không dùng parser hoặc solver, chỉ unit và bước gửi thủ công mới chạy engine. Khi thêm kịch bản, phải thêm kiểm tra mọi bước và exact values trước khi công bố; không sửa engine để ưu ái fixture.
+
+**Kiểm tra cuối:** Trong lúc làm việc xuất hiện thêm thay đổi ngoài phạm vi demo ở `src/App.tsx`, `src/components/ui/HomeHero.tsx`, các locale VI/EN/ZH và scripts E2E Coach/homepage. Không sửa, stage, revert hoặc xóa các thay đổi này. Kết quả trên thuộc lượt kiểm tra demo đã hoàn tất; không tuyên bố kiểm chứng toàn bộ công việc song song xuất hiện sau đó.

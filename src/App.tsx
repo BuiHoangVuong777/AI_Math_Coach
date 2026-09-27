@@ -1,6 +1,5 @@
 import { useState, useCallback, lazy, Suspense } from 'react';
-import { Routes, Route, Link } from 'react-router-dom';
-import { GraduationCap, Network } from 'lucide-react';
+import { Routes, Route } from 'react-router-dom';
 import Scene from './components/three/Scene';
 import Header from './components/ui/Header';
 import SearchBar from './components/ui/SearchBar';
@@ -8,6 +7,7 @@ import FilterBar from './components/ui/FilterBar';
 import DetailPanel from './components/detail/DetailPanel';
 import Tooltip from './components/ui/Tooltip';
 import LoadingScreen from './components/ui/LoadingScreen';
+import HomeHero from './components/ui/HomeHero';
 import SphereTestPage from './pages/SphereTestPage';
 import DemoGuard from './components/canvas/DemoGuard';
 import DemoLoginPage from './pages/DemoLoginPage';
@@ -18,7 +18,10 @@ const ReasoningCanvasPage = lazy(() => import('./pages/ReasoningCanvasPage'));
 
 function HomePage() {
   const [isLoading, setIsLoading] = useState(true);
-  const { isDetailOpen } = useFieldStore();
+  const { isDetailOpen, filterMode } = useFieldStore();
+  // First drag, zoom or touch on the universe collapses the hero so central nodes stay reachable.
+  const [exploring, setExploring] = useState(false);
+  const startExploring = useCallback(() => setExploring(true), []);
 
   const handleLoadingComplete = useCallback(() => {
     setIsLoading(false);
@@ -28,7 +31,7 @@ function HomePage() {
     <div className="w-full h-full relative bg-[#0a0a1a] overflow-hidden">
       {isLoading && <LoadingScreen onComplete={handleLoadingComplete} />}
 
-      <div className={`absolute inset-0 transition-opacity duration-500 ${isLoading ? 'opacity-0' : 'opacity-100'}`}>
+      <div className={`absolute inset-0 transition-opacity duration-500 ${isLoading ? 'opacity-0' : 'opacity-100'}`} onPointerDown={startExploring} onWheel={startExploring}>
         <Scene />
       </div>
 
@@ -48,21 +51,9 @@ function HomePage() {
           
           <Tooltip />
 
-          <Link
-            to="/coach"
-            className="pointer-events-auto absolute bottom-24 right-4 flex items-center gap-2 rounded-full bg-indigo-500 px-4 py-2 text-sm font-semibold text-white shadow-lg shadow-indigo-500/30 hover:bg-indigo-400 focus:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300"
-          >
-            <GraduationCap className="h-4 w-4" />
-            AI Math Coach · Thể tích hình trụ
-          </Link>
-          <Link
-            to="/canvas"
-            className="pointer-events-auto absolute bottom-36 right-4 flex items-center gap-2 rounded-full bg-emerald-600 px-4 py-2 text-sm font-semibold text-white shadow-lg shadow-emerald-600/30 hover:bg-emerald-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300"
-          >
-            <Network className="h-4 w-4" />
-            Math Reasoning Canvas
-          </Link>
-          
+          {/* Primary product entry. The legacy /coach route stays available by direct URL. */}
+          {!isDetailOpen && <HomeHero compact={exploring || filterMode !== 'all'} />}
+
           {isDetailOpen && (
             <div className="absolute top-0 right-0 bottom-0 pointer-events-auto">
               <DetailPanel />

@@ -114,7 +114,7 @@ async function main() {
   // This changes only the isolated Chrome profile, never the app or user settings.
   await send('Page.addScriptToEvaluateOnNewDocument', {source: `performance.setResourceTimingBufferSize(1000);localStorage.setItem('math-universe-sphere-config', JSON.stringify({variantId:'minimal',params:{color:'#00ffff',radius:1,opacity:0.4,metalness:0.1,roughness:0.3,emissiveIntensity:0.3,clearcoat:0.5,latLines:10,lonLines:16,lineOpacity:0.35,particleCount:40,particleSize:0.04,particleOpacity:0.3,autoRotate:true}}))`});
   await send('Page.navigate', {url: BASE + '/'});
-  await waitFor(`!!document.querySelector('a[href="/coach"]')`, 'home loaded', 30000);
+  await waitFor(`!!document.querySelector('a[href="/canvas"]')`, 'home loaded', 30000);
   await evaluate(HELPERS);
   // Dev-server modules are the app's actual instances; used for exhaustive catalog checks.
   await evaluate(`(async()=>{

@@ -277,5 +277,12 @@
     "polynomial-approximation": "多项式逼近",
     "best-approximation": "最佳逼近",
     "interpolation": "插值理论"
+  },
+  "hero": {
+    "eyebrow": "AI MATH COACH",
+    "subtitle": "写下你的思考，看见你的理解。",
+    "body": "你的每一步推理都会被检查、解释，并以交互模型可视化。",
+    "cta": "开始探索",
+    "features": "逐步推理 · 3D 可视化 · AI 引导"
   }
 }

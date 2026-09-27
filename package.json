@@ -14,7 +14,8 @@
     "test:e2e": "node scripts/e2e-cylinder-coach.mjs",
     "preview": "vite preview",
     "test:e2e:graph": "node scripts/e2e-graph-localization.mjs",
-    "test:e2e:canvas": "node scripts/e2e-canvas.mjs"
+    "test:e2e:canvas": "node scripts/e2e-canvas.mjs",
+    "test:e2e:home": "node scripts/e2e-home.mjs"
   },
   "dependencies": {
     "@react-three/drei": "^9.88.0",

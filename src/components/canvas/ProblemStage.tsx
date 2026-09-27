@@ -1,4 +1,5 @@
 import { useState, type FormEvent } from 'react';
+import DemoScenarios from './DemoScenarios';
 import { CheckCircle2, FileQuestion, Loader2 } from 'lucide-react';
 import { PROBLEM_STATUS_TEXT, SAMPLE_PROBLEMS } from '@/data/canvas/copy';
 import { formatExact, fromDecimal } from '@/lib/reasoning/exact';
@@ -43,6 +44,7 @@ export function ProblemInput() {
           <option value="">— chọn để điền —</option>
           {SAMPLE_PROBLEMS.map((s) => <option key={s.label} value={s.text}>{s.label}</option>)}
         </select>
+        <DemoScenarios onUse={setProblemText} />
         <span className="ml-auto text-xs text-slate-500">{problemText.length}/{LIMITS.problemText}</span>
         <button type="submit" disabled={!problemText.trim() || pending} className="flex items-center gap-1.5 rounded-lg bg-indigo-500 px-3 py-1.5 text-sm font-semibold text-white disabled:opacity-40">
           {pending && <Loader2 className="h-4 w-4 animate-spin" />} Phân tích đề

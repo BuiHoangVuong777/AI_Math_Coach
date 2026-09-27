@@ -268,3 +268,6 @@ input:focus, textarea:focus {
     font-size: 14px;
   }
 }
+
+@keyframes demo-enter { from { opacity: 0; transform: translateY(8px) scale(.99); } to { opacity: 1; transform: translateY(0) scale(1); } }
+@media (prefers-reduced-motion: no-preference) { .demo-dialog { animation: demo-enter 180ms ease-out; } }

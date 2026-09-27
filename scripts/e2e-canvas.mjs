@@ -17,6 +17,7 @@ import { mkdtempSync, writeFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import assert from 'node:assert/strict';
+import { DEMO_SCENARIOS } from '../src/data/canvas/demoScenarios.ts';
 
 const BASE = process.env.E2E_BASE_URL ?? 'http://localhost:4173';
 const CHROME = process.env.CHROME_PATH ?? 'google-chrome';
@@ -208,6 +209,71 @@ async function main() {
     await waitFor(`Boolean(document.querySelector('#problem-text'))`, 'login survives refresh');
     await evaluate(HELPERS);
     await screenshot('demo-login-return.png');
+  });
+
+  await step('Demo modal: four exact fixtures, copy isolation, keyboard, mobile and no session mutation', async () => {
+    assert.equal(await evaluate(`!!document.querySelector('[data-testid="demo-dialog"]')`), false, 'never opens automatically');
+    await E.set('#problem-text','Đề đang soạn');
+    if (DEV_BUILD) await evaluate(`(async()=>{const r=performance.getEntriesByType('resource').find(e=>new URL(e.name).pathname==='/src/stores/reasoningSessionStore.ts');window.__demoStore=(await import(r.name)).useCanvas;window.__demoBefore=JSON.stringify(__demoStore.getState());})()`);
+    await evaluate(`window.__demoWrites=[];window.__demoRequests=0;window.__savedClipboard=navigator.clipboard.writeText.bind(navigator.clipboard);navigator.clipboard.writeText=async text=>{__demoWrites.push(text);};window.__demoFetch=window.fetch;window.fetch=(...a)=>{__demoRequests++;return __demoFetch(...a);};`);
+    await E.click('Kịch bản demo');
+    await waitFor(`!!document.querySelector('[data-testid="demo-dialog"]')`, 'demo modal opens');
+    assert.equal(await evaluate(`document.querySelector('#root').inert`),true);
+    assert.equal(await evaluate(`document.activeElement.getAttribute('aria-label')`),'Đóng kịch bản demo');
+    for (const demo of DEMO_SCENARIOS) {
+      await evaluate(`document.querySelector('[data-demo-id="${demo.id}"]').click()`);
+      assert.equal(await evaluate(`document.querySelectorAll('[data-demo-id][aria-pressed="true"]').length`),1);
+      assert.equal(await evaluate(`document.querySelector('[data-demo-id="${demo.id}"]').getAttribute('aria-pressed')`),'true');
+      assert.equal(await evaluate(`document.querySelector('[data-testid="demo-problem"]').textContent`),demo.problem);
+      assert.equal(await evaluate(`document.querySelector('[data-testid="demo-answer"]').open`),false);
+      await evaluate(`document.querySelector('[data-testid="copy-problem"]').click()`);
+      await waitFor(`document.querySelector('[role="status"]').textContent.includes('Đã sao chép đề bài')`, 'accessible problem copy feedback');
+      assert.equal(await evaluate(`__demoWrites.at(-1)`),demo.problem);
+      for (const [i,text] of demo.steps.entries()) {
+        await evaluate(`document.querySelector('[data-demo-step="${i}"] button').click()`);
+        await waitFor(`document.querySelector('[role="status"]').textContent.includes('Đã sao chép bước ${i+1}')`, 'individual step copy feedback');
+        assert.equal(await evaluate(`__demoWrites.at(-1)`),text,'only one exact step copied');
+      }
+      await evaluate(`document.querySelector('[data-testid="demo-answer"] summary').click()`);
+      assert.equal(await evaluate(`document.querySelector('[data-testid="demo-answer"]').open`),true);
+    }
+    const key = async (key, code, vk, modifiers=0) => {await send('Input.dispatchKeyEvent',{type:'keyDown',key,code,windowsVirtualKeyCode:vk,modifiers,...(key==='Enter'?{text:'\r'}:{})});await send('Input.dispatchKeyEvent',{type:'keyUp',key,code,windowsVirtualKeyCode:vk,modifiers});};
+    await evaluate(`document.querySelector('[data-testid="demo-dialog"] button').focus()`);
+    await key('Tab','Tab',9,8);
+    assert.equal(await evaluate(`document.activeElement.tagName`),'SUMMARY','Shift+Tab wraps');
+    await key('Tab','Tab',9);
+    assert.equal(await evaluate(`document.activeElement.getAttribute('aria-label')`),'Đóng kịch bản demo','Tab wraps');
+    await evaluate(`document.querySelector('[data-demo-id="height-half"]').focus()`);
+    await key('Enter','Enter',13);
+    await waitFor(`document.querySelector('[data-demo-id="height-half"]').getAttribute('aria-pressed')==='true'`, 'keyboard selects scenario');
+    assert.equal(await evaluate(`document.querySelector('[data-demo-id="height-half"]').getAttribute('aria-pressed')`),'true');
+    await screenshot('demo-modal-desktop.png');
+    await send('Emulation.setDeviceMetricsOverride',{width:390,height:844,deviceScaleFactor:1,mobile:true});
+    await send('Emulation.setEmulatedMedia',{features:[{name:'prefers-reduced-motion',value:'reduce'}]});
+    await sleep(250);
+    assert.equal(await evaluate(`getComputedStyle(document.querySelector('[data-testid="demo-dialog"]')).animationName`),'none');
+    assert.ok(await evaluate(`(()=>{const r=document.querySelector('[data-testid="demo-dialog"]').getBoundingClientRect();return r.left>=0&&r.right<=innerWidth&&r.top>=0&&r.bottom<=innerHeight;})()`));
+    assert.ok(await evaluate(`(()=>{const s=document.querySelector('[data-testid="demo-scroll"]');s.scrollTop=s.scrollHeight;return s.scrollHeight>s.clientHeight&&s.scrollTop>0&&s.scrollWidth<=s.clientWidth;})()`));
+    await screenshot('demo-modal-mobile.png');
+    await evaluate(`navigator.clipboard.writeText=async()=>{throw new Error('denied')};document.querySelector('[data-testid="copy-problem"]').click()`);
+    await waitFor(`document.querySelector('[role="status"]').textContent.includes('Chưa sao chép được')`, 'clipboard failure feedback');
+    if(DEV_BUILD) assert.equal(await evaluate(`JSON.stringify(__demoStore.getState())`),await evaluate('__demoBefore'),'opening/selecting/copying never mutates session');
+    assert.equal(await evaluate('__demoRequests'),0,'no requests from modal');
+    assert.equal(await evaluate(`document.querySelector('#problem-text').value`),'Đề đang soạn');
+    await key('Escape','Escape',27);
+    await waitFor(`!document.querySelector('[data-testid="demo-dialog"]')`, 'Escape closes');
+    assert.equal(await evaluate(`document.activeElement.textContent.trim()`),'Kịch bản demo');
+    assert.equal(await evaluate(`document.querySelector('#root').inert`),false);
+    await E.click('Kịch bản demo');
+    await evaluate(`document.querySelector('[data-demo-id="diameter-double"]').click()`);
+    await E.click('Dùng đề này');
+    assert.equal(await evaluate(`document.querySelector('#problem-text').value`),DEMO_SCENARIOS[2].problem);
+    assert.equal(await evaluate(`!!document.querySelector('[data-testid="demo-dialog"]')`),false);
+    assert.equal(await evaluate(`!!document.querySelector('#row-input')`),false);
+    assert.equal(await evaluate('__demoRequests'),0,'use only populates textarea');
+    await E.click('Kịch bản demo');await E.click('Đóng');
+    await evaluate(`navigator.clipboard.writeText=__savedClipboard;window.fetch=__demoFetch;`);
+    await send('Emulation.clearDeviceMetricsOverride');await send('Emulation.setEmulatedMedia',{features:[]});
   });
 
   await step('F1 unsupported problem (cone) is reported, not solved', async () => {

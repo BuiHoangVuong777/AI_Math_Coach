@@ -2142,3 +2142,15 @@ Trong bản Vite dev, nhà phát triển có thể chủ động mở `/canvas?i
 | FR-UI-005 | Chọn dòng/hình hai chiều, Voice tại dòng/chi tiết, phụ đề/cue đúng nguồn; sửa/chọn/F8/reset/logout/unmount hủy như v0.6. Inspector chỉ dev opt-in, không đổi context hoặc bỏ guard. | FR-VIS-008, FR-VOICE-001…006, FR-XM-003; unit/browser |
 
 Kiểm thử kỹ thuật không thay nghiệm thu sư phạm, screen reader hoặc thiết bị thật. Kết quả chạy và phạm vi tệp ghi tại AGENT.md sau xác minh; không dùng kết quả v0.6 như bằng chứng v0.7.
+
+### 23.4 Khám phá kịch bản demo tùy chọn
+
+**CONFIRMED:** Trên màn hình nhập đề `/canvas`, nút “Kịch bản demo” cạnh bộ chọn đề mẫu mở hộp thoại do người dùng chủ động yêu cầu; không tự mở. Giữ bộ chọn đề mẫu. Bốn bài hình trụ: bán kính 2→4 cm với h=5 cm (tỉ số 4); chiều cao 12→6 cm với r=3 cm (1/2); đường kính 6→12 cm với h=10 cm (4, phải suy ra cả hai bán kính); bán kính 5→15 dm với h=8 dm (9).
+
+- Hiển thị đề đầy đủ và từng bước mẫu theo thứ tự; một thẻ được chọn, đáp án tham khảo mặc định thu gọn, đổi kịch bản thì thu gọn lại. Đây là tài liệu demo, không phải bằng chứng học sinh tự làm.
+- Sao chép đề chỉ lấy nguyên văn đề; sao chép bước chỉ lấy bước đó, có thông báo thành công/thất bại tiếp cận được. Không tự điền hoặc gửi lời giải. “Dùng đề này” chỉ thay textarea và đóng hộp thoại, chưa phân tích đề.
+- Mở/chọn/đóng/copy không thay phiên, đồ thị, gợi ý hoặc trạng thái solver; không gọi API. Hộp thoại chỉ nằm ở màn nhập đề, không xuất hiện trong F8. Giữ F1–F8, miền toán, validator và chính sách tiết lộ hiện tại.
+- Hộp thoại hỗ trợ Escape, giữ/trả tiêu điểm, thẻ chọn bằng Tab/Enter/Space, nền không tương tác, cuộn mobile, reduced-motion. Backdrop tối mờ, thẻ active và văn bản tương phản rõ.
+- Dữ liệu tái dùng được kiểm bằng parser và từng lượt validator xác định; kiểm copy riêng, lựa chọn, phím, đáp án thu gọn, không mutation và desktop/mobile qua browser. Chưa coi kiểm kỹ thuật là nghiệm thu học tập hoặc WCAG toàn diện.
+
+**Nhật ký bổ sung 27/09/2026 (v0.7):** Thêm khám phá demo tùy chọn tại màn nhập đề; không thay hợp đồng engine hoặc các quyết định Mục 23.1–23.3.

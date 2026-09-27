@@ -284,5 +284,12 @@
     "polynomial-approximation": "Xấp xỉ đa thức",
     "best-approximation": "Xấp xỉ tốt nhất",
     "interpolation": "Lý thuyết nội suy"
+  },
+  "hero": {
+    "eyebrow": "AI MATH COACH",
+    "subtitle": "Viết cách em nghĩ. Nhìn thấy cách em hiểu.",
+    "body": "Từng bước suy luận của em được kiểm tra, giải thích và trực quan hóa bằng mô hình tương tác.",
+    "cta": "Bắt đầu khám phá",
+    "features": "Viết từng bước · Trực quan 3D · AI hướng dẫn"
   }
 }
