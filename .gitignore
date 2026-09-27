@@ -1,0 +1,13 @@
+node_modules
+
+# Local environment and credentials (never commit secrets)
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+.secrets/
+secrets/
+credentials.json
+service-account*.json
+.vercel/
