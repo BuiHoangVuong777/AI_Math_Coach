@@ -647,3 +647,47 @@ Backend mock :8897, Vite dev :4292, production preview :4291; không provider th
 Log: `/tmp/demo-{unit,typecheck,build,lint,browser,prod-browser}.log`. Không có cú pháp kịch bản nào cần fallback/LLM; mở modal không dùng parser hoặc solver, chỉ unit và bước gửi thủ công mới chạy engine. Khi thêm kịch bản, phải thêm kiểm tra mọi bước và exact values trước khi công bố; không sửa engine để ưu ái fixture.
 
 **Kiểm tra cuối:** Trong lúc làm việc xuất hiện thêm thay đổi ngoài phạm vi demo ở `src/App.tsx`, `src/components/ui/HomeHero.tsx`, các locale VI/EN/ZH và scripts E2E Coach/homepage. Không sửa, stage, revert hoặc xóa các thay đổi này. Kết quả trên thuộc lượt kiểm tra demo đã hoàn tất; không tuyên bố kiểm chứng toàn bộ công việc song song xuất hiện sau đó.
+
+## 18. Trang chủ: Math Reasoning Canvas là CTA chính duy nhất — 27/09/2026
+
+### 18.1 Giao diện và điều hướng
+
+- Bỏ hai nút góc trái-dưới cũ (“AI Math Coach · Thể tích hình trụ” → `/coach` và nút phụ → `/canvas`). Route `/coach` giữ nguyên, chỉ không còn được liên kết từ trang chủ; vào trực tiếp bằng URL vẫn chạy.
+- `HomeHero` (mới) đặt trên vũ trụ 3D: panel kính (blur, viền `white/10`, glow nhẹ), eyebrow “AI MATH COACH”, tiêu đề “Math Reasoning Canvas”, phụ đề, đoạn mô tả, CTA “Bắt đầu khám phá →” (`Link` tới `/canvas`, đi qua `DemoGuard` → `/login` với `state.from = '/canvas'`), microcopy tính năng. Đây là `a[href="/canvas"]` duy nhất trên trang chủ.
+- Wrapper `pointer-events-none`, chỉ panel nhận chuột/focus; panel nằm giữa `top-32` và `bottom-28/32` nên không che header, nút tìm kiếm hay FilterBar.
+- **Thu gọn khi khám phá:** đo thực tế cho thấy panel đầy đủ che vĩnh viễn 72/147 nút 3D ở chế độ “Tất cả” (từ mọi góc xoay, vì pan bị tắt) và mọi nút khi lọc theo nhóm. Vì vậy lần kéo/zoom/chạm đầu tiên lên vũ trụ (`onPointerDown`/`onWheel` ở wrapper Scene trong `App.tsx`) hoặc khi chọn một nhóm lọc, hero chuyển thành viên thuốc nhỏ “Math Reasoning Canvas + CTA” phía trên FilterBar (vẫn cùng một link `/canvas`). Chọn lại “Tất cả” khi chưa tương tác sẽ trả về panel đầy đủ. Hero ẩn khi DetailPanel mở. Sau khi thu gọn: 147/147 nút có thể lộ ra ở một góc xoay nào đó.
+- Animation vào 0,7 s (framer-motion); `prefers-reduced-motion` → hiện ngay, không dịch chuyển. Focus ring `ring-4 white/80` rõ trên nền tối. i18n: khóa `hero.{eyebrow,subtitle,body,cta,features}` trong `vi/en/zh.json`; tên sản phẩm “Math Reasoning Canvas” không dịch.
+
+### 18.2 Tệp thay đổi
+
+- `src/components/ui/HomeHero.tsx` (mới): hero đầy đủ / thu gọn, reduced motion.
+- `src/App.tsx`: bỏ hai `Link` góc và import `GraduationCap`/`Network`/`Link`; thêm state `exploring`, render `HomeHero`. Routes không đổi.
+- `src/i18n/vi.json`, `en.json`, `zh.json`: thêm object `hero`.
+- `scripts/e2e-home.mjs` (mới) + `package.json` script `test:e2e:home`.
+- `scripts/e2e-cylinder-coach.mjs`: bước đầu nay khẳng định trang chủ không còn link `/coach` và mở `/coach` trực tiếp.
+- `scripts/e2e-graph-localization.mjs`: điều kiện “home loaded” đổi từ `a[href="/coach"]` sang `a[href="/canvas"]`.
+- `dist/`: được build lại (`npm run build`).
+- Không sửa Reasoning Engine, Voice, auth, validator, server, `src/index.css`, PRODUCT_SPEC (spec chỉ yêu cầu trang chủ và `/coach` công khai — §12.3 — không mâu thuẫn).
+
+### 18.3 Kết quả thực tế (27/09/2026, Chrome headless + SwiftShader)
+
+| Kiểm tra | Kết quả |
+|---|---|
+| `npm test` | 130/130 đạt |
+| `npx tsc -b` | Đạt |
+| `npm run build` | Đạt (cảnh báo chunk >500 kB có sẵn) |
+| `npm run lint` | Không chạy được: `eslint: not found` |
+| `test:e2e:home` (preview) | 9/9 đạt, không lỗi trang: không còn CTA cũ, 1 CTA `/canvas`, căn giữa, không chồng header/search/FilterBar, không tràn ngang, contrast CTA ≥ 4.5, Tab+focus ring+Enter → `/login` (`from=/canvas`), click chuột thật, drag → thu gọn + tâm vũ trụ là `CANVAS`, click CTA thu gọn, chọn nhóm → thu gọn, “Tất cả” → đầy đủ, đổi ngôn ngữ vi→en→zh→vi, `/coach` trực tiếp, tablet 820, mobile 390, 360×640, reduced motion |
+| `test:e2e` `/coach` (preview) | 11/11 đạt |
+| `test:e2e:canvas` (preview) | 21/21 đạt |
+| `test:e2e:graph` (dev) | Đạt: 11 nhóm hover/click 3D thật, 147 nút × 5 tab, search, locale |
+
+Mọi E2E chạy lại cuối cùng với proxy `/api` trỏ tới cổng trống (`COACH_SERVER_PORT=18799`) → chế độ fallback, không gọi LLM. **Lưu ý:** một lượt chạy sớm hơn của `/coach` và `canvas` E2E đã đi qua `server/index.ts` của người dùng ở :8787 (đang báo chế độ AI) và thất bại ở kiểm tra chế độ fallback; lượt đó có thể đã phát sinh lời gọi model thật. Đã xem ảnh chụp desktop, focus, thu gọn, tablet, mobile, small mobile.
+
+### 18.4 Giới hạn còn lại
+
+- Trước lần tương tác đầu, các nút nằm sau panel không hover/click được (cần kéo hoặc chọn nhóm một lần).
+- `app.changeLanguage` chưa có trong `en/zh.json` nên aria-label nút ngôn ngữ luôn là tiếng Việt (có sẵn từ trước).
+- Header mobile: SearchBar mặc định `x = innerWidth/2 − 200` bị lệch ra ngoài mép trái; ở 360 px chữ “MathUniverse” chạm các nút header (có sẵn từ trước, không nằm trong hero).
+- Font Space Grotesk không tải trong headless nên ảnh chụp hiển thị font dự phòng serif (giống header).
+- Chưa kiểm screen reader thật hoặc trên thiết bị cảm ứng thật.
