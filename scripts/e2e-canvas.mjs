@@ -290,6 +290,11 @@ async function main() {
     await confirmAll();
     for (const r of ROWS_A) await addRow(r);
     assert.deepEqual(await statuses(), Array(6).fill('valid'));
+    // §24.3 mission bar: observational milestones, neutral next action, no score/badges while learning.
+    await waitFor(`document.querySelector('[data-testid="milestone-reason"]')?.dataset.state === 'achieved'`, 'mission reasoning milestone');
+    assert.deepEqual(await evaluate(`[...document.querySelectorAll('[data-testid^="milestone-"]')].map(li => li.dataset.state)`), ['achieved', 'not_yet', 'achieved', 'not_yet']);
+    assert.equal(await evaluate(`document.querySelector('[data-testid="mission-next-action"]').dataset.kind`), 'verify_optional');
+    assert.equal(await evaluate(`document.querySelectorAll('[data-testid="score-total"], [data-badge], [data-testid="completion-panel"]').length`), 0, 'no score or badges during reasoning');
     const coach = await E.coach();
     assert.equal(coach.length, 1);
     assert.equal(coach[0].type, 'invitation');
@@ -350,6 +355,9 @@ async function main() {
     await E.click('Tự kiểm tra');
     await waitFor(`Boolean(document.querySelector('[data-testid="independent-view"]'))`, 'independent view');
     assert.equal(await evaluate(`document.querySelectorAll('[data-coach-source], canvas, [data-testid="comparison-table"], [data-testid="scaling-chart"]').length`), 0, 'J-AC-13');
+    assert.ok(await evaluate(`!!document.querySelector('[data-testid="mission-independent"]') && !document.querySelector('[data-testid="mission-progress"], [data-testid^="milestone-"]')`), 'F8 shows only the mission step, no main evidence');
+    await send('Emulation.setEmulatedMedia', { features: [{ name: 'prefers-reduced-motion', value: 'reduce' }] });
+    await waitFor(`matchMedia('(prefers-reduced-motion: reduce)').matches`, 'reduced-motion media active');
     const main = await E.text();
     assert.ok(!main.includes('Em nghĩ bán kính gấp 3'), 'main history hidden');
     const analog = await evaluate(`document.querySelector('[data-testid="analog-text"]').textContent`);
@@ -358,6 +366,8 @@ async function main() {
     await addRow(`r gấp ${r2} : ${r1} = ${k} lần.`);
     await addRow(`Chiều cao không đổi nên V gấp ${k}² = ${k * k} lần.`);
     assert.deepEqual(await statuses(), ['none', 'none'], 'no verdict before submission');
+    // Style at the moment the completion header is inserted (no timing luck): reduced motion → already visible.
+    await evaluate(`window.__firstHeader = new Promise((resolve) => { const mo = new MutationObserver(() => { const h = document.querySelector('[data-testid="completion-panel"] header'); if (h) { mo.disconnect(); const cs = getComputedStyle(h); resolve({ opacity: cs.opacity, transform: cs.transform }); } }); mo.observe(document.body, { subtree: true, childList: true }); }); void 0`);
     await E.click('Nộp bài');
     await waitFor(`Boolean(document.querySelector('[data-testid="summary-view"]'))`, 'summary');
     const t = await E.text();
@@ -365,7 +375,57 @@ async function main() {
     assert.ok(t.includes('“Em nghĩ bán kính gấp 3 lần nên thể tích cũng gấp 3 lần.”'), 'hypothesis verbatim');
     assert.ok(t.includes('không phải đánh giá năng lực lâu dài'), 'limitation');
     assert.ok(t.includes('Đổi r₂ từ 5 đến 15'), 'experiment evidence');
+    const motionState = await evaluate('window.__firstHeader');
+    assert.ok(motionState.opacity === '1' && (motionState.transform === 'none' || motionState.transform === 'matrix(1, 0, 0, 1, 0, 0)'), 'reduced motion: completion shown without entrance movement ' + JSON.stringify(motionState));
+    await send('Emulation.setEmulatedMedia', { features: [] });
     await screenshot('canvas-b-summary.png');
+  });
+
+  await step('Mission completion (Case B): 100/100, criteria with evidence, badges, separate self-check, support, Coach message + Voice, next challenge, mobile', async () => {
+    await waitFor(`Boolean(document.querySelector('[data-testid="completion-panel"]'))`, 'completion panel');
+    assert.equal(await evaluate(`document.querySelector('[data-testid="completion-panel"]').dataset.missionComplete`), 'true');
+    assert.equal(await evaluate(`document.querySelector('[data-testid="score-total"]').dataset.total`), '100');
+    const crit = await evaluate(`[...document.querySelectorAll('details[data-testid^="criterion-"]')].map(d => [d.dataset.testid, +d.dataset.points, +d.dataset.max, d.dataset.status])`);
+    assert.deepEqual(crit, [['criterion-problem_understanding', 15, 15, 'full'], ['criterion-evidence_reasoning', 30, 30, 'full'], ['criterion-verification', 20, 20, 'full'], ['criterion-independent_transfer', 25, 25, 'full'], ['criterion-own_explanation', 10, 10, 'full']]);
+    assert.ok((await evaluate(`document.querySelector('[data-testid="score-disclaimer"]').textContent`)).includes('không phải điểm đánh giá trí thông minh'));
+    // Evidence is traceable to the learner's rows/events (opened details).
+    await evaluate(`document.querySelector('[data-testid="criterion-verification"]').open = true`);
+    const kinds = await evaluate(`[...document.querySelectorAll('[data-testid="criterion-verification"] [data-evidence-kind]')].map(li => li.dataset.evidenceKind + ':' + li.dataset.nodeIds)`);
+    assert.ok(kinds.includes('self_correction:n1 n4') && kinds.includes('tested_prediction:n1 n2'), 'verification evidence cites rows ' + kinds);
+    assert.ok((await evaluate(`document.querySelector('[data-testid="criterion-verification"]').innerText`)).includes('sự kiện #'), 'event sequence numbers shown');
+    assert.deepEqual(await evaluate(`[...document.querySelectorAll('[data-badge]')].map(b => b.dataset.badge).sort()`), ['data_detective', 'explainer', 'independent_explorer', 'little_scientist']);
+    assert.equal(await evaluate(`document.querySelector('[data-testid="independent-outcome"]').dataset.status`), 'evaluated');
+    assert.ok((await evaluate(`document.querySelector('[data-testid="independent-outcome"]').innerText`)).includes('Đáp án: khớp'));
+    assert.equal(await evaluate(`document.querySelector('[data-testid="guided-points"]').textContent`), '75/75');
+    assert.ok((await evaluate(`document.querySelector('[data-testid="support-used"]').innerText`)).includes('Thử nghiệm trên mô hình: 1 lần'));
+    const message = await evaluate(`[...document.querySelectorAll('[data-completion-segment]')].map(li => li.textContent)`);
+    assert.equal(message.at(-1), 'Tóm tắt này chỉ phản ánh phiên học này; không phải đánh giá năng lực lâu dài.');
+    assert.ok(!/giỏi|thông minh|thành thạo|nắm vững|kém|yếu/.test(message.join(' ')), 'no ability or mastery claims');
+    // Voice reads exactly the approved message (user-initiated only).
+    assert.equal(await evaluate(`!!document.querySelector('[data-testid="voice-controls"]')`), false, 'no automatic speech');
+    await evaluate(`document.querySelector('[data-testid="listen-completion"]').click()`);
+    await waitFor(`Boolean(document.querySelector('[data-voice-state="speaking"]'))`, 'completion Voice speaking', 20_000);
+    assert.equal(await evaluate(`document.querySelector('[data-testid="voice-subtitle"]').textContent`), message[0]);
+    assert.ok(await evaluate(`document.querySelector('[data-completion-segment="0"]').className.includes('ring-1')`), 'spoken sentence highlighted');
+    if (MODE !== 'ai') {
+      assert.equal(await evaluate(`window.__utterance.text`), message[0]);
+      await evaluate(`window.__utterance.onend()`);
+      await waitFor(`document.querySelector('[data-testid="voice-subtitle"]')?.textContent === ${JSON.stringify(message[1])}`, 'second approved segment');
+    }
+    await E.click('Dừng đọc');
+    assert.equal(await evaluate(`!!document.querySelector('[data-testid="voice-controls"]')`), false);
+    await screenshot('completion-desktop.png');
+    await send('Emulation.setDeviceMetricsOverride', { width: 390, height: 844, deviceScaleFactor: 1, mobile: true });
+    await sleep(300);
+    assert.ok(await evaluate(`document.scrollingElement.scrollWidth <= innerWidth`), 'completion has no horizontal overflow at 390 px');
+    assert.ok(await evaluate(`(() => { const r = document.querySelector('[data-testid="score-card"]').getBoundingClientRect(); return r.left >= 0 && r.right <= innerWidth; })()`));
+    await screenshot('completion-mobile.png');
+    await send('Emulation.clearDeviceMetricsOverride');
+    // Optional next challenge: problem text only, opens a fresh F1 (no answer).
+    const nc = await evaluate(`document.querySelector('[data-testid="next-challenge-text"]').textContent`);
+    assert.ok(nc.length > 20 && !/đáp án/i.test(nc));
+    await E.click('Làm bài này trong phiên mới');
+    await waitFor(`document.querySelector('#problem-text')?.value === ${JSON.stringify(nc)}`, 'next challenge prefilled in problem input');
   });
 
   await step('Case C: diameter misread drawn as-is; edits revalidate dependents; rows never rewritten', async () => {
@@ -389,6 +449,19 @@ async function main() {
     assert.deepEqual(await statuses(), Array(5).fill('valid'));
     assert.ok((await evaluate(`__e.row(1).innerText`)).includes('Lịch sử (1)'));
     await screenshot('canvas-c-after.png');
+  });
+
+  await step('Early finish (Case C): incomplete self-check marked, only supported evidence scored, data-reading challenge', async () => {
+    await E.click('Kết thúc phiên');
+    await waitFor(`Boolean(document.querySelector('[data-testid="completion-panel"]'))`, 'completion after early finish');
+    assert.ok((await evaluate(`document.querySelector('[data-testid="completion-headline"]').textContent`)).includes('kết thúc sớm'));
+    assert.equal(await evaluate(`document.querySelector('[data-testid="score-total"]').dataset.total`), '75');
+    assert.ok(await evaluate(`!!document.querySelector('[data-testid="score-incomplete"]')`));
+    assert.equal(await evaluate(`document.querySelector('[data-testid="criterion-independent_transfer"]').dataset.status`), 'incomplete');
+    assert.equal(await evaluate(`document.querySelector('[data-testid="independent-outcome"]').dataset.status`), 'not_started');
+    assert.equal(await evaluate(`document.querySelector('[data-testid="independent-points"]').textContent`), 'chưa có bằng chứng');
+    assert.equal(await evaluate(`document.querySelector('[data-testid="next-challenge"]').dataset.family`), 'diameter_change');
+    assert.ok(!(await evaluate(`[...document.querySelectorAll('[data-badge]')].map(b => b.dataset.badge)`)).includes('independent_explorer'));
   });
 
   await step('REG-01: v0.3 lesson through the generic pipeline', async () => {
@@ -726,6 +799,17 @@ async function main() {
     await tabTo(btn('Nộp bài'), 'submit');
     await key('Enter');
     await waitFor(`Boolean(document.querySelector('[data-testid="summary-view"]'))`, 'summary reached by keyboard only', 20_000);
+    await tabTo(`a.tagName === 'SUMMARY' && a.parentElement.dataset.testid === 'criterion-problem_understanding'`, 'first score criterion');
+    assert.equal(await evaluate(`document.activeElement.matches(':focus-visible')`), true);
+    await key('Enter');
+    await waitFor(`document.querySelector('[data-testid="criterion-problem_understanding"]').open`, 'criterion details open by keyboard');
+    await tabTo(`a.dataset.testid === 'listen-completion'`, 'listen completion');
+    await key('Enter');
+    await waitFor(`!!document.querySelector('[data-voice-state="speaking"]')`, 'keyboard completion Voice');
+    await tabTo(btn('Dừng đọc'), 'stop completion Voice');
+    await key('Enter');
+    await tabTo(btn('Làm bài này trong phiên mới'), 'next challenge button');
+    assert.equal(await evaluate(`document.activeElement.matches(':focus-visible')`), true);
     await screenshot('xg-keyboard-summary.png');
   });
 

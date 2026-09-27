@@ -1,20 +1,25 @@
 import { create } from 'zustand';
 import { VoiceController, type VoiceSnapshot, type SpeechPort } from '@/lib/voice/playback';
 import { browserSpeechPort, audioPlayback } from '@/lib/voice/browserPort';
-import { voicePlan } from '@/lib/voice/plan';
+import { completionVoicePlan, voicePlan } from '@/lib/voice/plan';
+import { toEvidenceWire } from '@/lib/reasoning/sessionEvidence';
 import { toWire } from '@/lib/reasoning/orchestrator';
 import { useCanvas } from '@/stores/reasoningSessionStore';
 import { useDemoAuth } from '@/stores/demoAuthStore';
-interface VoiceStore extends VoiceSnapshot {provider:string; listen(id:string):void;pause():void;resume():void;replay():void;stop():void;speed(r:number):void;}
+interface VoiceStore extends VoiceSnapshot {provider:string; listen(id:string):void;listenCompletion():void;pause():void;resume():void;replay():void;stop():void;speed(r:number):void;}
 let controller:VoiceController;
 const port:SpeechPort={async start(segment,rate,signal,end,error){
  const state=useCanvas.getState();const plan=controller.snapshot.plan;
- if(!state.ctx||!plan||state.ctx.phase!=='reasoning'||state.ctx.graph.version!==plan.graphVersion)throw new Error('stale');
+ const completion=plan?.kind==='completion';
+ if(!state.ctx||!plan||state.ctx.phase!==(completion?'summary':'reasoning')||state.ctx.graph.version!==plan.graphVersion)throw new Error('stale');
  if(useDemoAuth.getState().session?.mode==='server'){
   const abort=new AbortController();const cancel=()=>abort.abort();
   signal.addEventListener('abort',cancel,{once:true});const timer=window.setTimeout(cancel,15000);
   try{
-   const r=await fetch('/api/voice/speech',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'},signal:abort.signal,body:JSON.stringify({request:{context:toWire(state.ctx),expectedGraphVersion:plan.graphVersion,opId:'voice-read',op:{type:'select_node',nodeId:plan.nodeId},selectedNodeIds:[plan.nodeId]},segmentIndex:controller.snapshot.index})});
+   const r=await fetch('/api/voice/speech',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'},signal:abort.signal,body:JSON.stringify(completion
+    // The server recomputes the evidence and the approved completion text itself.
+    ?{kind:'completion',request:{context:toEvidenceWire(state.ctx),expectedGraphVersion:plan.graphVersion,opId:'voice-completion',op:{type:'select_node',nodeId:null}},segmentIndex:controller.snapshot.index}
+    :{request:{context:toWire(state.ctx),expectedGraphVersion:plan.graphVersion,opId:'voice-read',op:{type:'select_node',nodeId:plan.nodeId},selectedNodeIds:[plan.nodeId]},segmentIndex:controller.snapshot.index})});
    if(!r.ok || r.headers.get('X-Voice-Plan')!==plan.id)throw new Error('provider_unavailable');
    const blob=await r.blob();if(signal.aborted)throw new Error('aborted');
    const provider=r.headers.get('X-Voice-Provider')==='mock'?'mock':'openai';
@@ -30,6 +35,7 @@ const port:SpeechPort={async start(segment,rate,signal,end,error){
 }};
 export const useVoice=create<VoiceStore>((set)=>({state:'idle',subtitle:'',cue:null,plan:null,index:0,rate:1,provider:'',
  listen(id){const s=useCanvas.getState();if(!s.ctx||s.pending)return;const p=voicePlan(s.ctx,id);if(p)void controller.play(p);},
+ listenCompletion(){const s=useCanvas.getState();if(!s.ctx||s.pending)return;const p=completionVoicePlan(s.ctx);if(p)void controller.play(p);},
  pause(){controller.pause();},resume(){controller.resume();},replay(){controller.replay();},stop(){controller.stop();},speed(r){controller.speed(r);}
 }));
 controller=new VoiceController(port,s=>useVoice.setState(s));

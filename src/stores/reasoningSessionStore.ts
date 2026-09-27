@@ -57,6 +57,8 @@ interface CanvasStore {
   turn(op: TurnOp, opts?: { localOnly?: boolean; stale?: string[] }): Promise<boolean>;
   select(ids: string[]): void;
   backToInput(): void;
+  /** Optional next challenge (§24.7): a fresh session with only the problem text prefilled (F1 runs again). */
+  startNextChallenge(problemText: string): void;
   reset(): void;
 }
 
@@ -195,6 +197,10 @@ export const useCanvas = create<CanvasStore>((set, get) => ({
   backToInput() {
     sessionEpoch++;
     set({ ...initial, problemText: get().problemText, status: get().status });
+  },
+  startNextChallenge(problemText) {
+    sessionEpoch++;
+    set({ ...initial, problemText, status: get().status });
   },
   reset() {
     sessionEpoch++;

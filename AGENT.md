@@ -1,7 +1,7 @@
 # AGENT.md — Technical handoff
 
-Operational memory for the next coding agent. Product requirements: [docs/PRODUCT_SPEC.md](docs/PRODUCT_SPEC.md) **v0.7** (Vietnamese; hidden internal reasoning graph and learner-row explanations, preserving engine IDs, Voice, authentication and history). The code is the source of technical truth.
-Last updated: 2026-09-27 (optional demo discovery implemented; current change/results in §17; hidden-graph UI and engine invariants in §16. §14–15 record prior verification; Voice/auth configuration in §15 remains valid; `/coach` remains legacy/REG-01).
+Operational memory for the next coding agent. Product requirements: [docs/PRODUCT_SPEC.md](docs/PRODUCT_SPEC.md) **v0.8** (Vietnamese; v0.8 adds Learning Motivation & Evidence-based Progress in §24; hidden internal reasoning graph, learner-row explanations, Voice, demo authentication and history preserved). The code is the source of technical truth.
+Last updated: 2026-09-27 (motivation/scoring/badges/completion implemented — current change and results in §19; homepage hero §18; demo discovery §17; hidden-graph UI and engine invariants §16. §14–15 record prior verification; Voice/auth configuration in §15 remains valid; `/coach` remains legacy/REG-01).
 
 ## 1. Product goal and verified POC scope
 
@@ -691,3 +691,145 @@ Mọi E2E chạy lại cuối cùng với proxy `/api` trỏ tới cổng trốn
 - Header mobile: SearchBar mặc định `x = innerWidth/2 − 200` bị lệch ra ngoài mép trái; ở 360 px chữ “MathUniverse” chạm các nút header (có sẵn từ trước, không nằm trong hero).
 - Font Space Grotesk không tải trong headless nên ảnh chụp hiển thị font dự phòng serif (giống header).
 - Chưa kiểm screen reader thật hoặc trên thiết bị cảm ứng thật.
+
+## 19. Learning Motivation & Evidence-based Progress (spec v0.8 §24) — 27/09/2026
+
+### 19.1 Architecture and data flow
+
+```
+SessionContext (canonical, browser memory)
+  └─ collectSessionEvidence(ctx) ── recomputed node state + evidenceEvents(graph.events)   ← only source of truth
+  └─ collectFinalAssessment(ctx) ── evaluateIndependent(ind) re-run (never the stored/client verdict)
+        ├─ calculateLearningScore(evidence, assessment)  → LearningScore (LS-1, 5 criteria, parts, rules, evidence, missing)
+        ├─ awardBadges(evidence, assessment)             → Badge[] (≤ 1 each)
+        ├─ deriveMissionProgress(evidence, assessment)   → MissionProgress (4 observational milestones + next action)
+        ├─ selectNextChallenge(spec, evidence, assessment) → NextChallenge (generateForFamily; text only)
+        └─ buildCompletionMessage(...) + guard (UNSUPPORTED_CLAIM + findLeak)
+  buildScoringResult(ctx) bundles all of the above (pure, deterministic, never mutates ctx).
+Voice: completionVoicePlan(ctx) = message.spoken → VoiceController (existing) → POST /api/voice/speech {kind:'completion', request:{context: toEvidenceWire(ctx), op: select_node null}, segmentIndex}
+       server: validateTurnRequest → processedOpIds cleared → runTurn (silent revalidation) → completionVoicePlan → mock/OpenAI TTS; else browser SpeechSynthesis (VI only).
+```
+
+No LLM is involved in evidence, scoring, badges, mission, next challenge or the Coach completion message (fixed templates). No persistence, no DB, no cross-session profile; scores are never sent to a model.
+
+### 19.2 Source-file map
+
+| File | Role |
+|---|---|
+| `src/lib/reasoning/sessionEvidence.ts` (new) | `SessionEvidence`, `FinalAssessment`, `evidenceEvents` (wire-safe event subset: no learner text, only `invalid` validations), `toEvidenceWire`, `collectSessionEvidence`, `collectFinalAssessment`. Genuine mistakes, corrections, cross-checks, tested predictions, justifications, data use, conclusion grading, support used. |
+| `src/lib/reasoning/learningScore.ts` (new) | `RUBRIC` (LS-1), `ScoreEvidence/ScorePart/ScoreCriterion/LearningScore/Badge`, `calculateLearningScore`, `awardBadges`, `BADGE_INFO`, `SCORE_DISCLAIMER`; child-friendly Vietnamese explanations. |
+| `src/lib/reasoning/mission.ts` (new) | `missionFor(family)` (title “Bí mật của hình trụ”, value-free subtitle/objective), `deriveMissionProgress`. |
+| `src/lib/reasoning/nextChallenge.ts` (new) | `selectNextChallenge` (stretch / data-reading / same-family rules). |
+| `src/lib/reasoning/completion.ts` (new) | `buildCompletionMessage`, `buildScoringResult`, `UNSUPPORTED_CLAIM`, `LIMITATION_SENTENCE`. |
+| `src/lib/reasoning/analog.ts` | **Additive only:** exported `Family` type and `generateForFamily(family, seed, unit, avoid)` (same generator/round-trip checks); `generateAnalog` unchanged. |
+| `src/lib/voice/plan.ts` | `kind?: 'completion'` on the plan type; `completionVoicePlan(ctx)` (summary only). Node plans unchanged. |
+| `server/voiceRoutes.ts` | Accepts `{kind:'completion', request, segmentIndex}` only in `summary`; clears client `processedOpIds`; rebuilds the plan server-side. Node route behaviour unchanged. |
+| `src/stores/voiceStore.ts` | Port accepts completion plans in summary (sends `toEvidenceWire`), `listenCompletion()`. |
+| `src/stores/reasoningSessionStore.ts` | `startNextChallenge(text)` (new epoch, problem text prefilled, F1 again). |
+| `src/components/canvas/MissionProgress.tsx` (new) | Mission bar in `reasoning`; `MissionIndependentBanner` in F8 (no main evidence). |
+| `src/components/canvas/CompletionPanel.tsx` (new) | Completion screen (score card, criteria `<details>`, independent outcome, support, badges, Coach message + “Nghe tóm tắt”, next challenge). `VoiceControls` is always mounted here (see 19.6). |
+| `src/components/canvas/EndStages.tsx`, `src/pages/ReasoningCanvasPage.tsx` | Mount the new components; existing evidence summary kept below (“nhật ký gốc”). |
+| `src/data/canvas/copy.ts` | `MILESTONE_STATE_UI`, `CRITERION_STATUS_UI` (icon + word). |
+| `src/lib/reasoning/learningProgress.test.ts` (new, 18 tests), `server/completionVoice.test.ts` (new, 1 HTTP test) | Unit/integration coverage. |
+| `scripts/e2e-canvas.mjs` | Added: Case A mission assertions; F8 banner; deterministic reduced-motion check; new steps “Mission completion (Case B)” and “Early finish (Case C)”; keyboard completion checks. No existing assertion removed or weakened. |
+| `docs/PRODUCT_SPEC.md` | v0.8: new §24, plus 7.9 note, 18.6, 20.3/20.4 (TBD 15–17), 21.1 history row. |
+
+Unchanged: Validator, rules, parser, graph reducer, orchestrator/`evaluateIndependent`, disclosure, explanations, auth, `/coach`, homepage.
+
+### 19.3 Deterministic rules (exact formulas)
+
+Definitions (all in `sessionEvidence.ts`):
+
+- **Genuine mistake:** the learner's own text judged `invalid` at submission — the `node_validated` event with the same `graphVersion` as that node's `row_submitted` (F1 contradictions: `problem_confirmed`), with ≥ 1 reason code outside `{depends_on_invalid, depends_on_ambiguous, depends_on_insufficient, premise_changed, missing_premise}`; skipped if any earlier revision of the node was `valid` (regression = fake mistake). `dataMisreading` = `contradicts_problem_text` or claimed symbol kind ∈ {r, d, h}.
+- **Correction:** node now `valid` + a `node_revised` after the mistake (`learner_edit`), or `revisedBy` contains an active `valid` learner node (`marked_revised_by`, learner-accepted link or RG-C2 replace).
+- **Cross-check:** two active `valid` non-hypothesis rows claiming the same problem unknown with equal values, neither in the other's learner-premise closure (closure ignores other producers of the same symbol), and (different `normalized.kind`) or (both closures non-empty and disjoint).
+- **Tested prediction:** hypothesis row + experiment `start` after it + a later `valid` observation (`experiment_observation`), else a later `valid` non-hypothesis row claiming the same symbol (`later_reasoning`).
+- **Supported justification:** `valid` row with a non-vague justification citing constraint/relation/rule, a `justification` row, or a `scaling` statement with `fixed` quantities. Attempted = any other row with a justification.
+- **Conclusion (coached problem):** primary unknown = first `k*` unknown else last; candidates = active non-hypothesis rows claiming it with a value; each graded like F8 (§7.8) over **premise** dependencies only (`explicit_reference`/`llm_suggested` excluded); the best-ranked candidate counts (max, never a sum).
+
+LS-1 (`learningScore.ts`, weights = product hypothesis):
+
+| Criterion | Points |
+|---|---|
+| problem_understanding 15 | confirmation 5 if `problem_confirmed`; data_use 10 if ≥ 1 valid row depends on `g:/c:/rel:` AND (no important data in problem OR ≥ 1 valid row uses `c:/rel:/g:d*`) AND no uncorrected non-retracted data misreading; 5 if data used but a condition fails; 0 otherwise |
+| evidence_reasoning 30 | answer 10 if correct and row `valid`; 5 if correct, `inference = follows`, not bare; else 0. chain 20 `sufficient`, 10 `partial`, else 0. `incomplete` if ended early without a conclusion |
+| verification 20 | 20 if ≥ 1 of {corrected genuine mistake, cross-check, tested prediction}; 10 if a genuine mistake was re-edited but is not valid; else 0 |
+| independent_transfer 25 | answer 10 if F8 correct and not bare; reasoning 15 `sufficient`, 7 `partial`, else 0; `incomplete` if not started / not submitted / not evaluated |
+| own_explanation 10 | 10 if ≥ 1 supported justification; 5 if only attempted; else 0 |
+
+Badges: data_detective (corrected data misreading, or important data present and used in a valid row); little_scientist (≥ 1 tested prediction); explainer (≥ 1 supported justification); independent_explorer (F8 correct, not bare, `sufficient`). Mission complete = understand ∧ reason (correct + valid + sufficient) ∧ independent (submitted & evaluated or not evaluable). Next challenge: strong F8 → `STRETCH[family]`; data misreading (non-compute) → `diameter_change`; else same family; seed = hash(main text | F8 text); avoids both texts.
+
+Expected results (tests): Case A rows only 55 (15/30/0/—/10; verification needs a check), Case A + cross-check + F8 100; Case B full journey 100 with all 4 badges; Case C before edits 10, after edits 75 (F8 not done); REG-01 with link + F8 100; bare guess 5.
+
+### 19.4 UI and Voice integration
+
+- `reasoning`: `MissionProgress` above Voice/workspace; no score, no badges (anti-farming, secondary UI). F8: one-line banner only. `summary`: `CompletionPanel` then the unchanged 7.9 summary.
+- Completion Voice is user-initiated (“Nghe tóm tắt”), subtitles = exact message sentences, current sentence highlighted via cue `completion:<i>`; server TTS (mock in tests) or browser VI speech; D0–D4/leak guard applied to every sentence. Offline mode never calls TTS.
+- Accessibility: headings/labels, `details/summary`, icon + word states, focus-visible rings, reduced motion (framer-motion `useReducedMotion`; browser-verified at insertion time), 390 px layout.
+
+### 19.5 Verification (27/09/2026, Node 22.23, Chrome headless + SwiftShader)
+
+Servers used: `scripts/mock-coach-server.ts` on :8897 (no `.env`, no paid calls), Vite dev :4292, production preview :4291 (mock backend), offline preview :4293 (proxy to empty :8898). The user's own `server/index.ts` on :8787 was **not** used or touched.
+
+| Check | Result |
+|---|---|
+| `npm test` | **149/149 pass** (130 existing + 18 `learningProgress.test.ts` + 1 `completionVoice.test.ts`) |
+| `npx tsc -b` | Pass |
+| `npm run build` | Pass (pre-existing >500 kB chunk warning) |
+| `npm run lint` | **Not runnable:** `eslint: not found` (exit 127) — pre-existing tooling gap, not a pass |
+| Canvas dev (mock AI, `E2E_BUILD_MODE=dev`) | **30/30** (28 existing + 2 new), no page errors |
+| Canvas production preview (mock AI) | **24/24** (22 + 2), no page errors |
+| Canvas offline (no backend) | **23/23** (21 + 2), no page errors |
+| Legacy `/coach` (mock AI) | 11/11 |
+| Homepage `test:e2e:home` | 9/9 |
+| Graph localization (dev) | Pass (11 groups 3D hover/click, 147 nodes × 5 tabs, locale cycling) |
+
+Observed and resolved during verification (not hidden):
+1. Dev E2E found a real bug: `VoiceControls` mounted only after playback started was stopped by React StrictMode's remount cleanup → completion Voice never played in dev. Fixed by always mounting it in `CompletionPanel`.
+2. First reduced-motion assertion was timing-dependent (failed once offline). Replaced by a MutationObserver check at insertion time + a negative control (without reduced motion: opacity 0, translateY 8 px; with: opacity 1, `none`).
+3. One dev run timed out at the pre-existing login step (“return to protected Canvas”) right after a hot update; the immediate rerun passed 30/30. Treated as dev-server latency, not fixed in code.
+4. An existing leak assertion (regex includes “chín”) matched the Vietnamese word “chính” in my mission objective; the copy was reworded (“của riêng em”), the assertion was kept, and the unit test now also guards “chín”.
+
+Screenshots inspected: `completion-desktop.png`, `completion-mobile.png` (390 px, no horizontal overflow), `canvas-a-3d.png` (mission bar is compact and secondary), `canvas-b-summary.png` (offline). Voice audio was mock/silent WAV or the mocked SpeechSynthesis; headless has 0 native Vietnamese voices — no real speech quality verified. No live OpenAI call.
+
+### 19.6 Acceptance coverage (AC-MOT, spec §24.11)
+
+| AC | Status | Evidence |
+|---|---|---|
+| AC-MOT-01 | IMPLEMENTED | E2E Case A mission states/next action, no score in reasoning; F8 banner only |
+| AC-MOT-02 | IMPLEMENTED | unit (1): no-mistake 100/100 |
+| AC-MOT-03 | IMPLEMENTED | unit (2) Case C/B corrections |
+| AC-MOT-04 | IMPLEMENTED | unit (3) regression edits, duplicates, slider, forged duplicate events; (7) hints |
+| AC-MOT-05 | IMPLEMENTED | unit (4) bare guess 0, wrong premises 5/30 |
+| AC-MOT-06 | IMPLEMENTED | unit (5) two paths equal |
+| AC-MOT-07 | IMPLEMENTED | E2E evidence kinds/node ids/event seqs; unit evidence refs |
+| AC-MOT-08 | IMPLEMENTED | unit (8) |
+| AC-MOT-09 | IMPLEMENTED | unit (9) incl. tutor-port claim |
+| AC-MOT-10 | IMPLEMENTED | unit mission test (no “9/chín/bình phương”, optional milestone) |
+| AC-MOT-11 | IMPLEMENTED | E2E Case B completion (dev/prod/offline), 390 px, reduced motion, next challenge |
+| AC-MOT-12 | IMPLEMENTED | unit (10) + E2E early finish |
+| AC-MOT-13 | IMPLEMENTED | unit (11) message scan + row references + no leak |
+| AC-MOT-14 | IMPLEMENTED (mock) | unit (13) plan = message, wire rebuild; HTTP test; E2E subtitles; real TTS not verified |
+| Cases A/B/C, REG-01, auth, Voice, graph, `/coach` | IMPLEMENTED | existing unit + all browser suites above |
+| Expert/learner validation of LS-1 weights, screen reader, real devices, real TTS | NOT_IMPLEMENTED | out of scope; TBD in spec 20.4 |
+
+### 19.7 Limitations and open decisions
+
+- Weights LS-1 are a hypothesis; no expert or learner study. Showing a numeric score to 11–15-year-olds is TBD (spec 20.4-15).
+- The server is stateless: the event log comes from the client, so the score is deterministic but **not tamper-proof** (same trust model as the 7.9 summary). Do not use it as an exam record.
+- Self-correction credit can be obtained by a learner who deliberately writes a wrong first attempt; this gives no advantage because the no-mistake routes give the same maximum.
+- Cross-check detection needs two rows with different statement kinds or disjoint premise chains; some legitimate informal checks (e.g. “kiểm tra lại: …” free text) are not recognised (→ unverified, no credit, no penalty).
+- Canvas copy (including motivation) is Vietnamese-only via `src/data/canvas/copy.ts`/engine strings, as the rest of Canvas; EN/ZH not provided.
+- Completion Coach message is template-based (LLM phrasing not enabled). Screen reader, real devices and real TTS remain unverified. Lint tooling still missing.
+- Commands to rerun (servers in separate terminals; never `server/index.ts` when avoiding paid calls):
+
+```bash
+npm test && npx --no-install tsc -b && npm run build
+COACH_SERVER_PORT=8897 node scripts/mock-coach-server.ts
+COACH_SERVER_PORT=8897 npx vite --host 127.0.0.1 --port 4292 --strictPort
+COACH_SERVER_PORT=8897 npx vite preview --host 127.0.0.1 --port 4291 --strictPort
+COACH_SERVER_PORT=8898 npx vite preview --host 127.0.0.1 --port 4293 --strictPort
+E2E_BASE_URL=http://127.0.0.1:4292 E2E_COACH_MODE=ai E2E_BUILD_MODE=dev E2E_CDP_PORT=9335 npm run test:e2e:canvas
+E2E_BASE_URL=http://127.0.0.1:4291 E2E_COACH_MODE=ai E2E_CDP_PORT=9336 npm run test:e2e:canvas
+E2E_BASE_URL=http://127.0.0.1:4293 E2E_CDP_PORT=9337 npm run test:e2e:canvas
+```

@@ -20,7 +20,7 @@ function rng(seed: number): () => number {
 }
 const pick = <T>(r: () => number, xs: T[]): T => xs[Math.floor(r() * xs.length) % xs.length];
 
-type Family = 'radius_change' | 'diameter_change' | 'height_change_down' | 'height_change_up' | 'both_change' | 'compute_V' | 'compute_A' | 'inverse_h' | 'inverse_r';
+export type Family = 'radius_change' | 'diameter_change' | 'height_change_down' | 'height_change_up' | 'both_change' | 'compute_V' | 'compute_A' | 'inverse_h' | 'inverse_r';
 
 export function familyOf(spec: ProblemSpec): Family {
   const unk = spec.unknowns.map((u) => u.symbol);
@@ -81,6 +81,25 @@ export function generateAnalog(spec: ProblemSpec, seedExtra = 0): ProblemSpec | 
     if (main && facts[main] && u2 === main && equals(f2[u2]!.value, facts[main]!.value)) continue;
     if (text === spec.text) continue;
     return { ...parsed, id: `${parsed.id}-analog` };
+  }
+  return null;
+}
+
+/**
+ * A confirmed problem of the requested family (used for the optional next challenge,
+ * §24.7). Same generator and round-trip checks as `generateAnalog`; texts in `avoid`
+ * (the main problem, the self-check) are never repeated. Null if no candidate passes.
+ */
+export function generateForFamily(family: Family, seed: number, unit: string, avoid: string[] = []): ProblemSpec | null {
+  const r = rng(seed);
+  for (let attempt = 0; attempt < 40; attempt++) {
+    const text = render(family, r, unit);
+    if (avoid.includes(text)) continue;
+    const parsed = confirmProblem(parseProblem(text), []).spec;
+    if (parsed.interpretationStatus !== 'confirmed') continue;
+    const u = parsed.unknowns[parsed.unknowns.length - 1]?.symbol;
+    if (!u || !solveProblem(parsed)[u]) continue;
+    return { ...parsed, id: `${parsed.id}-next` };
   }
   return null;
 }

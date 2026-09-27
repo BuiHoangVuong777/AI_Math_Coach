@@ -1,7 +1,7 @@
 # Đặc tả sản phẩm — AI Math Coach · POC Math Reasoning Canvas
 
-> Tài liệu sống · Phiên bản: 0.7  
-> Cập nhật lần cuối: 27/09/2026 · Trạng thái: Luồng chính do học sinh dẫn dắt (Student Reasoning → Dynamic Visual Map) đã được triển khai cho POC hình trụ (xem Mục 18.5). v0.5 có bằng chứng kỹ thuật trong AGENT.md §14; v0.6 bổ sung giọng đọc hướng dẫn tiếng Việt và đăng nhập demo, nghiệm thu riêng tại Mục 22. Bài S1–S6 v0.3 là kịch bản hồi quy REG-01. v0.7 ẩn bản đồ khỏi giao diện học sinh; giải thích cạnh từng dòng và trực quan 3D là chính (Mục 23). Chi tiết chưa quyết định được gắn TBD.
+> Tài liệu sống · Phiên bản: 0.8  
+> Cập nhật lần cuối: 27/09/2026 · Trạng thái: Luồng chính do học sinh dẫn dắt (Student Reasoning → Dynamic Visual Map) đã được triển khai cho POC hình trụ (xem Mục 18.5). v0.5 có bằng chứng kỹ thuật trong AGENT.md §14; v0.6 bổ sung giọng đọc hướng dẫn tiếng Việt và đăng nhập demo, nghiệm thu riêng tại Mục 22. Bài S1–S6 v0.3 là kịch bản hồi quy REG-01. v0.7 ẩn bản đồ khỏi giao diện học sinh; giải thích cạnh từng dòng và trực quan 3D là chính (Mục 23). v0.8 bổ sung Động lực học tập và tiến bộ dựa trên bằng chứng: nhiệm vụ, điểm phiên học có truy vết, huy hiệu, màn hình hoàn thành, giọng đọc tóm tắt và thử thách tiếp theo (Mục 24). Chi tiết chưa quyết định được gắn TBD.
 
 ## 0. Quy ước
 
@@ -468,6 +468,7 @@ Các luồng không phải các bước tuần tự bắt buộc. F1 là điều
 - Nội dung bắt buộc: đề; dự đoán/giả thuyết ban đầu nguyên văn; các node `invalid` và việc học sinh đã sửa hay chưa; thử nghiệm đã chạy; mức tiết lộ cao nhất theo node; số lượt Coach (AI/dự phòng); kết quả F8 hai trường.
 - Mục thiếu ghi “chưa có bằng chứng”. Câu giới hạn bắt buộc: “Tóm tắt này chỉ phản ánh phiên học này; không phải đánh giá năng lực lâu dài.”
 - Dữ liệu demo (`source = demo_script`) được gắn nhãn “dữ liệu minh họa” và không được trình bày như câu trả lời thật.
+- **(v0.8)** Tóm tắt này được giữ nguyên làm “nhật ký bằng chứng”; phía trên có màn hình hoàn thành nhiệm vụ (điểm phiên học, huy hiệu, lời nhắn Coach) dẫn xuất xác định từ cùng sự kiện — Mục 24.6. Câu giới hạn bắt buộc vẫn giữ.
 
 ---
 
@@ -1886,6 +1887,12 @@ Không được công bố “học nhanh hơn”, “hiểu tốt hơn” hoặ
 - Lint không chạy được vì thiếu ESLint. Hồi quy trang chủ: một lượt hoàn tất các kiểm tra nội dung nhưng thoát 143; lượt chạy lại timeout ở `abstract-harmonic`, chưa có lần chạy sạch trong lượt này. Không coi kết quả v0.6 là bằng chứng cho v0.7.
 - Voice dùng mock im lặng; chưa kiểm âm thanh thật, screen reader, thiết bị thật hoặc nghiệm thu sư phạm. Chi tiết tệp, kết quả và giới hạn ở AGENT.md §16.
 
+### 18.6 Hiện trạng động lực học tập v0.8 — 27/09/2026
+
+- **IMPLEMENTED:** Mục 24 (nhiệm vụ, điểm phiên học LS-1, huy hiệu, màn hình hoàn thành, giọng đọc tóm tắt, thử thách tiếp theo). Không thay đổi Validator, F1–F8, D0–D4, xác thực hoặc hợp đồng đồ thị; bổ sung một hàm sinh bài theo họ (`generateForFamily`) dùng chung bộ sinh bài tương tự đã kiểm chứng.
+- Kiểm thử đơn vị/HTTP **149/149 đạt**; TypeScript và build đạt. Canvas dev **30/30**, production **24/24**, ngoại tuyến **23/23**; `/coach` **11/11**; trang chủ **9/9**; bản địa hóa đồ thị đạt. Lint không chạy được (thiếu ESLint). Chi tiết và giới hạn ở AGENT.md §19.
+- Trọng số điểm là **HYPOTHESIS**, chưa được chuyên gia hoặc nghiên cứu với học sinh kiểm chứng; không dùng làm đánh giá năng lực.
+
 ---
 
 ## 19. Backlog lập trình POC theo ưu tiên
@@ -1958,6 +1965,7 @@ Không được công bố “học nhanh hơn”, “hiểu tốt hơn” hoặ
 - Phản hồi theo từng dòng và trực quan hóa mệnh đề sai giúp học sinh tự sửa lỗi.
 - Gợi ý tăng dần không làm tăng phụ thuộc vào AI.
 - Bằng chứng “sai → tự sửa → độc lập” có giá trị với phụ huynh.
+- (v0.8) Nhiệm vụ, điểm phiên học có giải thích và huy hiệu dựa trên bằng chứng làm học sinh 11–15 tuổi muốn tiếp tục và tự kiểm tra nhiều hơn, mà không làm tăng đoán mò, phụ thuộc AI hay áp lực. Trọng số rubric LS-1 là giả thuyết (Mục 24.1).
 
 ### 20.4 TBD cần quyết định
 
@@ -1975,6 +1983,9 @@ Không được công bố “học nhanh hơn”, “hiểu tốt hơn” hoặ
 12. (v0.5) Có ghi sự kiện “học sinh mở Level 2” làm bằng chứng không (quyền riêng tư, giá trị cho tóm tắt).
 13. (v0.5) Có bật diễn đạt giải thích bằng Tutor LLM trong POC không (chi phí, độ trễ, rà soát nội dung).
 14. (v0.5) Rủi ro dò đáp án: với một mệnh đề trần về ẩn số, trạng thái hiện có (`invalid` khi sai, `insufficient_evidence` khi đúng) đã cho biết đúng/sai. Giải thích v0.5 không thêm thông tin, nhưng quy tắc Validator này cần quyết định sản phẩm; tài liệu không tự đổi.
+15. (v0.8) Trọng số rubric LS-1 và ngưỡng từng phần; có hiển thị điểm số cho học sinh nhỏ tuổi hay chỉ hiển thị mức (TBD sau nghiên cứu người dùng).
+16. (v0.8) Có cho phép LLM diễn đạt lời nhắn hoàn thành (chỉ đổi câu chữ, có schema/guard) hay giữ mẫu cố định.
+17. (v0.8) Có lưu lịch sử điểm giữa các phiên hay không — hiện **không** (không hồ sơ xuyên phiên), phụ thuộc NFR-PRIV-002.
 
 ---
 
@@ -1987,6 +1998,7 @@ Không được công bố “học nhanh hơn”, “hiểu tốt hơn” hoặ
 | 0.1 | 26/09/2026 | Tạo tài liệu cho AI Tutor STEM với MVP chỉ gồm bài `y = ax²` và tình huống thành công sáu cảnh. | Bản mô tả sản phẩm ban đầu. | Toàn bộ tài liệu 0.1. |
 | 0.2 | 26/09/2026 | Định nghĩa lại thành AI Math Coach; ba giai đoạn và vòng học sáu bước; đề xuất tình huống hình chữ nhật. | Định nghĩa sản phẩm cập nhật. | Toàn bộ Mục 1–15. |
 | 0.3 | 26/09/2026 | Bài thể tích hình trụ lớp 9 được phê duyệt với S1–S6, hai mô hình 3D, dự đoán trước thử nghiệm, tính xác định, bài độc lập và bằng chứng phiên. | Yêu cầu MVP mới. | Mục 1.3, 3.3, 6–15; FR 10.7; NFR-MATH-006–007. |
+| 0.8 | 27/09/2026 | Bổ sung **Động lực học tập và tiến bộ dựa trên bằng chứng** (Mục 24): nhiệm vụ quan sát được, rubric LS-1 (100 điểm, 5 tiêu chí) có truy vết, bốn huy hiệu, màn hình hoàn thành, giọng đọc tóm tắt, thử thách tiếp theo; FR-MOT-001…012, AC-MOT-01…14. | Tăng động lực học tập mà không thưởng tốc độ, đoán mò, lỗi giả tạo hay phụ thuộc AI. | 1 (trạng thái), 7.9, 18.6, 20.3–20.4, 24; không thay F1–F8, D0–D4, Validator, auth, Voice. |
 | 0.7 | 27/09/2026 | Ẩn Reasoning Graph khỏi learner; 3D là trực quan chính, giải thích/Voice chuyển sang dòng; công cụ graph chỉ khi dev chủ động; F8/tóm tắt không render graph. | Đơn giản hóa trải nghiệm, giữ toàn bộ engine và D0–D4. | 10–11, 13.10, 14.5, 16.1, 22–23; ID cũ giữ nguyên. |
 | 0.6 | 27/09/2026 | Bổ sung hợp đồng giọng đọc tiếng Việt và đăng nhập demo; giữ ID và F1–F8. | Yêu cầu tiếp tục triển khai. | 12.2–12.3, 22; hiện trạng theo AGENT cuối. |
 | 0.5 | 27/09/2026 | Bổ sung **Explainable Reasoning Graph**: hợp đồng view model node/giải thích/cạnh (9.8–9.9), Explanation Builder (8.10), hai cấp trình bày, mật độ/điều hướng/di động, ba chế độ, ma trận tiết lộ cho giải thích, nhất quán khi sửa (10.8); cập nhật F3/F4/F5/F7, FR-XG/XE/XM/XN, NFR mới, trạng thái bản đồ cho Ca A–C (15.6), XG-AC-01…15, POC-AC-11/12, hiện trạng triển khai (18.3), BL-22…30. | Học sinh cần đọc được “vì sao” ngay trên bản đồ; giữ nguyên F1–F8, miền toán, chính sách D0–D4 và quyền riêng tư. | 0.1, 1.2–1.3, 5.1, 7.3–7.5, 7.7, 8.2, 8.6–8.10, 9.5–9.9, 10.5, 10.8, 11.3, 13.5, 13.10, 14.3, 14.5–14.6, 15.1–15.3, 15.6, 16.1, 18, 19, 20, 21. |
@@ -2154,3 +2166,137 @@ Kiểm thử kỹ thuật không thay nghiệm thu sư phạm, screen reader ho�
 - Dữ liệu tái dùng được kiểm bằng parser và từng lượt validator xác định; kiểm copy riêng, lựa chọn, phím, đáp án thu gọn, không mutation và desktop/mobile qua browser. Chưa coi kiểm kỹ thuật là nghiệm thu học tập hoặc WCAG toàn diện.
 
 **Nhật ký bổ sung 27/09/2026 (v0.7):** Thêm khám phá demo tùy chọn tại màn nhập đề; không thay hợp đồng engine hoặc các quyết định Mục 23.1–23.3.
+
+## 24. Động lực học tập và tiến bộ dựa trên bằng chứng — v0.8
+
+**CONFIRMED (quyết định sản phẩm v0.8):** Thưởng các **hành vi học tập có bằng chứng** — hiểu đề, suy luận có cơ sở, tự kiểm tra/tự sửa, tự làm bài tương tự, giải thích bằng lời của mình — **không** thưởng tốc độ, đoán mò, lỗi tạo ra giả tạo hay phụ thuộc AI. Toán học vẫn kiểm chứng xác định (Mục 8.5); LLM không tạo bằng chứng, không chấm điểm, không quyết định mức thành thạo. Tất cả là **IMPLEMENTED** cho POC hình trụ tại ngày 27/09/2026 (AGENT.md §19); hiệu quả học tập vẫn là **HYPOTHESIS**.
+
+### 24.1 Mục tiêu và giả thuyết
+
+| Mục tiêu | Giả thuyết — HYPOTHESIS | Cách đo sau POC (chưa thực hiện) |
+|---|---|---|
+| Học sinh 11–15 tuổi muốn đi hết nhiệm vụ (tới F8) | Nhiệm vụ có chặng quan sát được làm tăng tỷ lệ làm bài tự kiểm tra | Tỷ lệ phiên có `independent_submitted` giữa các biến thể giao diện |
+| Tự kiểm tra thay vì chỉ ra đáp án | Tiêu chí “Kiểm chứng và tự sửa” với con đường tương đương (không cần mắc lỗi) làm tăng tự kiểm tra | Tỷ lệ phiên có kiểm tra độc lập / dự đoán được kiểm tra |
+| Giải thích lý do | Tiêu chí “Giải thích bằng lời của em” làm tăng số kết luận có lý do | Tỷ lệ kết luận `valid` có `justification` (Mục 17.1) |
+| Không tạo áp lực | Điểm chỉ ở cuối phiên, không bảng xếp hạng/chuỗi ngày/tiền ảo | Khảo sát trải nghiệm, tỷ lệ bỏ dở |
+
+Trọng số 15/30/20/25/10 (rubric **LS-1**) là **giả thuyết sản phẩm ban đầu**, không phải thước đo học tập đã được kiểm chứng.
+
+### 24.2 Quyết định mới và quan hệ với đặc tả hiện có
+
+- Điểm là **bằng chứng của phiên này**, không phải nhãn năng lực: giữ J-AC-08, J-AC-14, FR-EVAL-005, NFR-SAFE-001/002. Màn hình luôn ghi “Điểm này chỉ tính cho phiên học hôm nay … không phải điểm đánh giá trí thông minh hay năng lực lâu dài” và câu giới hạn của 7.9.
+- Tóm tắt 7.9 **không bị thay thế**; màn hình hoàn thành nằm phía trên và dùng cùng sự kiện. F1–F8 giữ nguyên, học sinh vẫn dẫn dắt; các chặng nhiệm vụ là **quan sát**, không phải thứ tự bắt buộc (P-05, FR-STEP-004).
+- **Điểm không hiển thị trong lúc học** (chỉ ở `summary`) để không khuyến khích “cày điểm” hay chạy theo tốc độ; trong `reasoning` chỉ có thanh nhiệm vụ. F8 chỉ hiện chặng 4, không bằng chứng bài chính (F8-AC-01).
+- Lời nhắn Coach ở màn hình hoàn thành là **mẫu cố định xác định** trích dẫn bằng chứng thật; không gọi LLM (diễn đạt bằng LLM là TBD 20.4-16).
+- Với bài chính, “chuỗi suy luận” dùng quy tắc chấm lập luận F8 (7.8) nhưng chỉ theo **phụ thuộc tiền đề** (ký hiệu/điều kiện/quan hệ); tham chiếu nhắc lại một bước cũ (“không phải 3 lần như em đoán ở bước 1”) không phải tiền đề — nhất quán với Validator. Nếu có nhiều dòng kết luận, dòng có cơ sở tốt nhất được tính (lấy lớn nhất, không cộng). Bộ chấm F8 trong engine **không đổi**.
+
+### 24.3 Nhiệm vụ
+
+Tiêu đề chung “**Bí mật của hình trụ**”, phụ đề và mục tiêu theo họ bài (`familyOf`), **không nêu quy tắc hay giá trị** còn bị ẩn theo D0–D4 (ví dụ: “Tự tìm ra và giải thích được thể tích thay đổi thế nào khi bán kính đáy thay đổi, bằng các bước suy luận của riêng em.”).
+
+| Chặng | Bắt buộc cho “hoàn thành” | Đạt khi (quan sát từ bằng chứng) |
+|---|---|---|
+| 1. Hiểu và xác nhận đề | Có | Có sự kiện `problem_confirmed` |
+| 2. Dự đoán hoặc nêu hướng giải | **Tùy chọn** | Có dòng `hypothesis` hoặc `strategy` của học sinh |
+| 3. Suy luận có cơ sở tới điều đề hỏi | Có | Kết luận khớp, bước kết luận `valid`, chuỗi `sufficient` (24.4) |
+| 4. Tự giải bài tương tự | Có | F8 đã nộp và đánh giá (đúng hay sai đều là hoàn thành chặng) |
+
+Mỗi chặng có trạng thái bằng biểu tượng + chữ (Đã xong/Đang làm/Chưa). “Việc tiếp theo” xác định: sửa bước gốc chưa khớp → làm rõ → viết bước tiếp → nêu lý do/điều kiện → (tùy chọn) kiểm tra bằng cách khác → “Tự kiểm tra” → thử thách tiếp theo; không bao giờ chứa giá trị/quy tắc bị ẩn. Hoạt ảnh hoàn thành chặng/nhiệm vụ nhẹ, tắt khi `prefers-reduced-motion`.
+
+### 24.4 Hợp đồng và rubric LS-1
+
+Hàm thuần (không React/DOM, không LLM): `collectSessionEvidence(ctx)`, `collectFinalAssessment(ctx)`, `calculateLearningScore(evidence, finalAssessment)`, `awardBadges(evidence, finalAssessment)`, `deriveMissionProgress(evidence, finalAssessment)`, `selectNextChallenge(problemSpec, evidence, finalAssessment)`, `buildScoringResult(ctx)`. Kiểu: `SessionEvidence`, `FinalAssessment`, `LearningScore { rubricVersion, total, max: 100, criteria, complete, incompleteCriteria, disclaimer }`, `ScoreCriterion { id, label, max, points, status: full|partial|none|incomplete, parts[{rule}], explanation, calculation, evidence, missingEvidence }`, `ScoreEvidence { graph, kind, nodeIds, rows, eventSeqs, note }`, `ScoringResult`.
+
+**Nguồn bằng chứng:** trạng thái node **được tính lại** (Validator) + tập con sự kiện chỉ nối thêm (`problem_confirmed`, `row_submitted` bỏ nguyên văn, `node_validated` chỉ `invalid`, `node_revised`, `node_retracted`, `revised_by_marked`, `conflict_resolved`, `experiment`, `hint_shown`, `coach_exchange`, `phase_changed`, `independent_*`). Không đọc văn bản Tutor/LLM, không nhận điểm từ client. Dòng `demo_script` không được tính.
+
+**Định nghĩa dùng chung**
+
+- **Lỗi thật (genuine mistake):** nguyên văn của chính học sinh bị đánh giá `invalid` **ngay khi viết/sửa** (sự kiện `node_validated` cùng `graphVersion` với `row_submitted`; mâu thuẫn F1: lúc xác nhận), với ít nhất một mã lý do không phải hệ quả (`depends_on_*`, `premise_changed`, `missing_premise`). Dòng đã từng `valid` rồi bị sửa thành sai là **thoái lui**, không phải lỗi thật.
+- **Tự sửa:** lỗi thật + học sinh sửa chính dòng đó và nay `valid`, hoặc học sinh tự đánh dấu “được sửa bởi” (hoặc chọn thay thế ở RG-C2) một dòng `valid`.
+- **Kiểm tra độc lập:** hai dòng `valid` (không phải giả thuyết) cùng khẳng định một ẩn số với cùng giá trị, không dòng nào nằm trong chuỗi tiền đề của dòng kia (bỏ qua các dòng cùng ẩn số), và khác cách (kiểu mệnh đề khác, ví dụ quy luật tỷ lệ vs tính thể tích) hoặc có chuỗi tiền đề không giao nhau. Tính lại cùng phép tính không được tính.
+- **Dự đoán được kiểm tra:** dòng giả thuyết + (a) thử nghiệm bắt đầu sau dự đoán và một dòng quan sát `valid`, hoặc (b) một dòng sau đó `valid`, không phải giả thuyết, cho cùng đại lượng.
+- **Giải thích có cơ sở:** dòng `valid` có lý do không mơ hồ nêu điều kiện/quan hệ/quy tắc, hoặc dòng lý do riêng `valid`, hoặc mệnh đề tỷ lệ `valid` nêu đại lượng giữ nguyên.
+
+| Tiêu chí (tối đa) | Phần | Điều kiện đủ điểm | Một phần | Thiếu bằng chứng |
+|---|---|---|---|---|
+| Hiểu đề (15) | Xác nhận (5) | Có `problem_confirmed` | — | `incomplete` nếu chưa xác nhận |
+| | Dùng dữ kiện (10) | ≥ 1 dòng `valid` phụ thuộc dữ kiện đề; nếu đề có quan hệ/điều kiện giữ nguyên/đường kính thì ≥ 1 dòng `valid` dùng chúng; không còn lỗi đọc dữ kiện (r/d/h hoặc `contradicts_problem_text`) chưa sửa | 5: có dùng dữ kiện nhưng thiếu một trong hai điều kiện sau | 0 + “chưa có bước khớp nào dùng dữ kiện” |
+| Suy luận có bằng chứng (30) | Kết luận có cơ sở (10) | Kết luận khớp kết quả kiểm chứng và dòng kết luận `valid` | 5: khớp và `inference = follows` nhưng dựa trên bước chưa khớp | 0 nếu chưa có kết luận/không khớp/**đáp án trần** (đoán) |
+| | Chuỗi suy luận (20) | `sufficient`: mọi bước trên chuỗi tiền đề `valid`, bài tỷ số có nêu điều kiện | 10: `partial` (bước mơ hồ/chưa kiểm tra được hoặc thiếu điều kiện) | 0: `contains_invalid`/`insufficient_evidence`; `incomplete` nếu kết thúc sớm mà chưa có kết luận |
+| Kiểm chứng và tự sửa (20) | Một phần 20 | **Một trong ba con đường tương đương:** tự sửa lỗi thật; kiểm tra độc lập; dự đoán được kiểm tra. Không cần mắc lỗi; thanh trượt không bắt buộc; làm nhiều lần không cộng thêm | 10: đã sửa lại lỗi thật nhưng chưa `valid` | 0 + gợi ý trung tính (chỉ kéo thanh trượt thì chưa tính) |
+| Tự làm bài tương tự (25) | Đáp án (10) | F8 `answer = correct` và không phải đáp án trần | — | 0 khi sai/thiếu/không đọc được/đáp án trần |
+| | Lập luận (15) | F8 `reasoning = sufficient` | 7: `partial` | `incomplete` nếu chưa làm/chưa nộp/chưa đánh giá được |
+| Giải thích bằng lời của em (10) | Một phần 10 | ≥ 1 giải thích có cơ sở | 5: có viết lý do nhưng mơ hồ hoặc dòng chưa `valid` | 0 |
+
+F8 luôn được **chấm lại** từ đồ thị độc lập bằng `evaluateIndependent`, độc lập hoàn toàn với bài chính; bài chính không bao giờ cộng vào tiêu chí F8 và ngược lại. Gợi ý (`hint_shown`) và lượt Coach chỉ được ghi ở “Hỗ trợ em đã dùng”, **không trừ điểm**. Mỗi tiêu chí có `explanation` tiếng Việt thân thiện nêu vì sao có/chưa có điểm, `calculation` (ví dụ `5 + 10 = 15/15`), bằng chứng (dòng + số thứ tự sự kiện) và `missingEvidence` trung tính.
+
+### 24.5 Huy hiệu
+
+Tối đa một lần mỗi loại mỗi phiên; không bảng xếp hạng, chuỗi ngày, tiền ảo hay so sánh xã hội; không bao giờ trao vì Tutor/LLM nói học sinh đã làm gì.
+
+| Huy hiệu | Điều kiện xác định |
+|---|---|
+| 🔎 Thám tử dữ kiện | Tự sửa một lỗi đọc dữ kiện; hoặc (đề có quan hệ/điều kiện giữ nguyên/đường kính) ≥ 1 dòng `valid` dùng dữ kiện quan trọng đó |
+| 🧪 Nhà khoa học nhỏ | Có dự đoán được kiểm tra (24.4) |
+| 💬 Người giải thích | Có giải thích có cơ sở (24.4) |
+| 🧭 Tự mình khám phá | F8: đáp án khớp, không phải đáp án trần, lập luận `sufficient` |
+
+### 24.6 Màn hình hoàn thành
+
+Trong `summary`, phía trên tóm tắt 7.9: tiêu đề hoàn thành nhiệm vụ (hoặc “Phiên kết thúc sớm…”), bốn chặng, tổng điểm /100 với câu miễn trừ, tách **Học có hướng dẫn** (75) và **Tự làm độc lập** (25 hoặc “chưa có bằng chứng”), năm tiêu chí mở/đóng bằng bàn phím với quy tắc, cách tính, bằng chứng và phần thiếu; kết quả tự làm (chấm riêng); hỗ trợ đã dùng; huy hiệu (và cách nhận huy hiệu chưa có); lời nhắn Coach mẫu cố định (≤ 4 câu bằng chứng + câu hỗ trợ + câu điểm + một gợi ý tiếp + câu giới hạn), bộ lọc cấm khẳng định năng lực/phán xét (“giỏi”, “thông minh”, “thành thạo”, “kém”, “yếu”…) và bộ bảo vệ rò rỉ D0–D4; một thử thách tiếp theo tùy chọn. Hoạt ảnh nhẹ, tắt khi `prefers-reduced-motion`; không tràn ngang ở 390 px.
+
+### 24.7 Thử thách tiếp theo
+
+Một bài, sinh bằng `generateForFamily` (cùng bộ sinh + kiểm tra khứ hồi Parser/Solver như F8), khác đề chính và đề F8, chỉ hiển thị đề (không đáp án). Quy tắc: F8 đúng và đủ → đổi sang quan hệ khác (ví dụ bán kính → chiều cao; chiều cao → bán kính; cả hai → đường kính; tính thể tích → tìm chiều cao); có lỗi đọc dữ kiện → “Bán kính hay đường kính?”; còn lại → cùng dạng số khác. “Làm bài này trong phiên mới” mở màn nhập đề với đề điền sẵn; F1 chạy lại. Lý do nêu bằng chứng của phiên, không tuyên bố thành thạo lâu dài.
+
+### 24.8 Giọng đọc
+
+Dùng lại pipeline v0.6 (một `VoiceController`, phụ đề, tạm dừng/tiếp tục/nghe lại/dừng/tốc độ, học sinh chủ động bấm “Nghe tóm tắt”, không tự phát). `completionVoicePlan(ctx)` chỉ ở `summary`; các đoạn **đúng bằng** câu lời nhắn hiển thị; câu đang đọc được tô. Máy chủ `/api/voice/speech` nhận `{kind:'completion', request, segmentIndex}` với context dạng `toEvidenceWire` (≤ 64 KB, không lặp nguyên văn học sinh trong sự kiện), bỏ `processedOpIds` của client, tính lại bằng `runTurn` rồi tự dựng plan — không nhận văn bản/điểm từ client. Không có provider → SpeechSynthesis giọng Việt; không có giọng Việt → phụ đề giữ nguyên. Không giọng coaching trong F8.
+
+### 24.9 An toàn sư phạm và chống “cày điểm”
+
+Mọi phần là ngưỡng “có ít nhất một bằng chứng đủ điều kiện”: số dòng, sửa lặp lại, dòng trùng, gợi ý, thao tác thanh trượt và sự kiện bị nhân đôi không cộng điểm. Không cần mắc lỗi để đạt điểm tối đa; tạo lỗi giả (sửa dòng đúng thành sai rồi sửa lại) không được tính; một lỗi được tính cũng không cho nhiều hơn con đường không lỗi. Nhiều cách giải đúng với bằng chứng tương đương cho điểm như nhau. Bằng chứng mơ hồ/chưa kiểm tra được không được tính là đúng. Không thưởng tốc độ (không dùng thời gian).
+
+### 24.10 Quyền riêng tư và tiếp cận
+
+Không lưu điểm/huy hiệu giữa các phiên, không hồ sơ xuyên phiên, không cơ sở dữ liệu; mọi thứ tính trong bộ nhớ từ phiên hiện tại (NFR-PRIV-007). Điểm không gửi cho LLM. Giao diện dùng tiêu đề/nhãn, `details/summary` bàn phím được, trạng thái bằng biểu tượng + chữ, tiêu điểm nhìn thấy, không chỉ dùng màu, mô tả chữ cho thanh điểm (NFR-A11Y-001…003).
+
+### 24.11 Yêu cầu chức năng và tiêu chí nghiệm thu
+
+| ID | Yêu cầu | Tiêu chí đo được |
+|---|---|---|
+| FR-MOT-001 | Thanh nhiệm vụ trong `reasoning`: tiêu đề, mục tiêu, bốn chặng quan sát, việc tiếp theo | AC-MOT-01, AC-MOT-10 |
+| FR-MOT-002 | Điểm LS-1 tính bằng hàm thuần từ bằng chứng đã kiểm chứng | AC-MOT-02…06 |
+| FR-MOT-003 | Mỗi tiêu chí có quy tắc, cách tính, bằng chứng (dòng + `seq`), phần thiếu | AC-MOT-07 |
+| FR-MOT-004 | F8 chấm riêng, không bị bài chính ảnh hưởng | AC-MOT-08 |
+| FR-MOT-005 | Bốn huy hiệu theo điều kiện 24.5, tối đa một lần, không từ LLM | AC-MOT-09 |
+| FR-MOT-006 | Màn hình hoàn thành 24.6, tách hướng dẫn/độc lập/thiếu bằng chứng | AC-MOT-11 |
+| FR-MOT-007 | Kết thúc sớm: chỉ tính bằng chứng có, đánh dấu phần chưa hoàn thành | AC-MOT-12 |
+| FR-MOT-008 | Lời nhắn Coach mẫu cố định, không khẳng định năng lực, không rò rỉ | AC-MOT-13 |
+| FR-MOT-009 | Giọng đọc tóm tắt qua pipeline hiện có, máy chủ dựng lại văn bản | AC-MOT-14 |
+| FR-MOT-010 | Một thử thách tiếp theo từ bộ sinh đã kiểm chứng, không đáp án | AC-MOT-11 |
+| FR-MOT-011 | Không điểm trong `reasoning`; F8 chỉ hiện chặng 4 | AC-MOT-01 |
+| FR-MOT-012 | Không lưu xuyên phiên, không gửi điểm cho LLM | Rà soát mã + AC-MOT-14 |
+
+| AC | Kịch bản kiểm thử |
+|---|---|
+| AC-MOT-01 | Browser: Ca A hiện chặng `achieved/not_yet/achieved/not_yet`, việc tiếp theo “kiểm tra (tùy chọn)”, không `score-total`/huy hiệu; F8 chỉ `mission-independent` |
+| AC-MOT-02 | Lời giải đúng hoàn toàn **không lỗi** + kiểm tra độc lập + F8 đúng → 100/100 |
+| AC-MOT-03 | Lỗi thật + học sinh sửa → 20/20 kiểm chứng; sửa thêm không cộng |
+| AC-MOT-04 | Sửa dòng đúng thành sai rồi sửa lại, dòng trùng, thanh trượt không quan sát, sự kiện nhân đôi, gợi ý lặp: điểm không đổi |
+| AC-MOT-05 | Đáp án đúng trần → 0 điểm suy luận; kết quả đúng từ tiền đề sai → 5/30 |
+| AC-MOT-06 | Hai cách giải đúng (luật tỷ lệ; tính thể tích) → điểm và huy hiệu như nhau |
+| AC-MOT-07 | Bằng chứng tiêu chí trỏ tới dòng/sự kiện thật (browser: `self_correction:n1 n4`, `tested_prediction:n1 n2`, “sự kiện #”) |
+| AC-MOT-08 | Bài chính tốt + F8 sai và ngược lại: bốn tiêu chí hướng dẫn không đổi; F8 trần → 0 |
+| AC-MOT-09 | Mỗi huy hiệu có ca dương/âm; Tutor giả nói “em đã thử nghiệm…” không trao huy hiệu |
+| AC-MOT-10 | Nhiệm vụ không nêu quy tắc/giá trị ẩn; chặng 2 tùy chọn không chặn hoàn thành |
+| AC-MOT-11 | Browser Ca B: 100/100, năm tiêu chí đủ, bốn huy hiệu, kết quả F8 riêng, hỗ trợ đã dùng, thử thách tiếp theo mở F1 điền sẵn; 390 px không tràn; reduced motion |
+| AC-MOT-12 | Kết thúc sớm: `independent_transfer = incomplete`, tiêu đề “kết thúc sớm”, không bịa bằng chứng |
+| AC-MOT-13 | Quét mọi văn bản hoàn thành: không từ cấm; mọi “bước N” tồn tại; bài chưa giải không lộ đáp án |
+| AC-MOT-14 | Plan giọng = câu hiển thị; máy chủ dựng lại cùng plan từ `toEvidenceWire`; từ chối văn bản client, sai phase, `kind` lạ; browser phụ đề = câu 1 |
+
+Ca A/B/C, REG-01, `/coach`, đăng nhập demo, Voice và đồ thị phải tiếp tục đạt (POC-AC-01…12, FR-VOICE, FR-DEMO-AUTH, FR-UI).
+
+### 24.12 Phạm vi MVP và tương lai
+
+**MVP (IMPLEMENTED):** nhiệm vụ, LS-1, bốn huy hiệu, màn hình hoàn thành, giọng đọc tóm tắt, thử thách tiếp theo — cho miền hình trụ hiện có, tiếng Việt. **Tương lai / TBD:** kiểm chứng trọng số với chuyên gia và học sinh; diễn đạt lời nhắn bằng LLM có guard; bản địa hóa EN/ZH cho Canvas; giao diện phụ huynh (FR-PARENT-001); lịch sử xuyên phiên (chỉ sau NFR-PRIV-002); xác thực nguồn gốc nhật ký sự kiện (máy chủ hiện không trạng thái nên không chứng thực được lịch sử do client gửi — điểm **không** phải hồ sơ thi cử).

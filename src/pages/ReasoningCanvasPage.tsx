@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { ArrowLeft, RotateCcw } from 'lucide-react';
 import VoiceControls from '@/components/voice/VoiceControls';
 import CoachPanel from '@/components/canvas/CoachPanel';
+import MissionProgress from '@/components/canvas/MissionProgress';
 import { IndependentView, SummaryView } from '@/components/canvas/EndStages';
 import { ProblemInput, ProblemReview } from '@/components/canvas/ProblemStage';
 import { RowsPanel } from '@/components/canvas/RowsPanel';
@@ -60,6 +61,7 @@ export default function ReasoningCanvasPage() {
         {s.ui === 'session' && s.ctx?.phase === 'summary' && <SummaryView />}
         {s.ui === 'session' && s.ctx?.phase === 'reasoning' && (
           <>
+            <MissionProgress />
             <VoiceControls />
             <div role="tablist" aria-label="Khu vực" className="mb-3 flex gap-1 lg:hidden">
               {(['rows', 'visual', 'coach'] as const).map((t) => (

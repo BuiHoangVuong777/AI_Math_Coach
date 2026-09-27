@@ -3,14 +3,19 @@ import { buildGraphViewModel, explanationForbidden, type ExplainContext } from '
 import { solveProblem } from '../reasoning/facts.ts';
 import { findLeak } from '../reasoning/disclosure.ts';
 import { planForContext } from '../reasoning/orchestrator.ts';
+import { buildScoringResult } from '../reasoning/completion.ts';
+import { hash } from '../reasoning/problemParser.ts';
 import type { DisclosureLevel, SessionContext } from '../reasoning/types.ts';
 export interface VoiceCue { nodeIds:string[]; edgeIds:string[]; elementIds:string[]; }
 export interface SpeechSegment { id:string; text:string; cue:VoiceCue; }
 export interface VoiceExplanationPlan {
+ /** 'completion' = mission-completion summary (§24.8); absent = row explanation. */
+ kind?:'completion';
  id:string; nodeId:string; nodeRevision:number; graphVersion:number; disclosureLevel:DisclosureLevel;
  approvedText:string; segments:SpeechSegment[]; sourceNodeIds:string[]; sourceEdgeIds:string[]; sourceElementIds:string[];
  provider:{preferred:'server';fallback:'speechSynthesis';timing:'segment';actual?:'openai'|'mock'|'speechSynthesis';reason?:string};
 }
+const PII=/\b[^\s@]+@[^\s@]+\.[^\s@]+\b|(?:\+?84|0)\d[\d .-]{7,}/;
 export function voicePlan(ctx:SessionContext,nodeId:string):VoiceExplanationPlan|null {
  if(ctx.phase!=='reasoning' || ctx.graph.graphId!=='main')return null;
  const specs=planForContext(ctx,[nodeId]);
@@ -34,4 +39,16 @@ export function voicePlan(ctx:SessionContext,nodeId:string):VoiceExplanationPlan
  if(!segments.length)return null;
  const unique=(xs:string[])=>[...new Set(xs)];
  return {id:`voice:${e.explanationId}`,nodeId,nodeRevision:node.revision,graphVersion:ctx.graph.version,disclosureLevel:e.disclosureLevel,approvedText:segments.map(s=>s.text).join('\n'),segments,sourceNodeIds:unique(segments.flatMap(s=>s.cue.nodeIds)),sourceEdgeIds:unique(segments.flatMap(s=>s.cue.edgeIds)),sourceElementIds:unique(segments.flatMap(s=>s.cue.elementIds)),provider:{preferred:'server',fallback:'speechSynthesis',timing:'segment'}};
+}
+/**
+ * Completion summary for Voice: exactly the approved completion message sentences
+ * (deterministic templates over recomputed evidence), in display order. Only in summary.
+ */
+export function completionVoicePlan(ctx:SessionContext):VoiceExplanationPlan|null {
+ if(ctx.phase!=='summary'||ctx.graph.graphId!=='main')return null;
+ const texts=buildScoringResult(ctx).message.spoken;
+ const segments:SpeechSegment[]=texts.map((text,i)=>({id:`completion-${i}`,text,cue:{nodeIds:[],edgeIds:[],elementIds:[`completion:${i}`]}})).filter(s=>!PII.test(s.text));
+ if(!segments.length)return null;
+ const approvedText=segments.map(s=>s.text).join('\n');
+ return {kind:'completion',id:`voice:completion:${hash(approvedText)}@v${ctx.graph.version}`,nodeId:'',nodeRevision:0,graphVersion:ctx.graph.version,disclosureLevel:0,approvedText,segments,sourceNodeIds:[],sourceEdgeIds:[],sourceElementIds:segments.flatMap(s=>s.cue.elementIds),provider:{preferred:'server',fallback:'speechSynthesis',timing:'segment'}};
 }

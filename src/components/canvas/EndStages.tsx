@@ -1,3 +1,5 @@
+import CompletionPanel from '@/components/canvas/CompletionPanel';
+import { MissionIndependentBanner } from '@/components/canvas/MissionProgress';
 import { RowsPanel } from '@/components/canvas/RowsPanel';
 import { STATUS_UI } from '@/data/canvas/copy';
 import { LIMITATION } from '@/data/canvas/copy';
@@ -11,6 +13,7 @@ export function IndependentView() {
   if (!ctx || !ind) return null;
   return (
     <div className="mx-auto max-w-3xl space-y-3" data-testid="independent-view">
+      <MissionIndependentBanner />
       <section className="rounded-xl border border-emerald-400/40 bg-emerald-500/5 p-4">
         <h2 className="text-base font-semibold text-white">Tự kiểm tra — bài tương tự (không có gợi ý)</h2>
         <p className="mt-1 text-sm text-slate-200" data-testid="analog-text">{ind.problemSpec.text}</p>
@@ -35,8 +38,10 @@ export function SummaryView() {
   const items = buildSummary(ctx.graph, ctx.independent, ctx.problemSpec.text);
   return (
     <div className="mx-auto max-w-4xl space-y-3" data-testid="summary-view">
-      <section className="rounded-xl border border-white/10 bg-slate-900/60 p-4">
-        <h2 className="text-lg font-semibold text-white">Tóm tắt bằng chứng của phiên</h2>
+      <CompletionPanel />
+      <section className="rounded-xl border border-white/10 bg-slate-900/60 p-4" aria-labelledby="evidence-log-title">
+        <h2 id="evidence-log-title" className="text-lg font-semibold text-white">Tóm tắt bằng chứng của phiên</h2>
+        <p className="text-xs text-slate-400">Nhật ký gốc mà điểm và huy hiệu ở trên dựa vào.</p>
         <dl className="mt-2 space-y-3">
           {items.map((it) => (
             <div key={it.key} data-summary={it.key}>

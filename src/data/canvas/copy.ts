@@ -97,3 +97,18 @@ export const SAMPLE_PROBLEMS = [
 ];
 
 export const LIMITATION = 'Tóm tắt này chỉ phản ánh phiên học này; không phải đánh giá năng lực lâu dài.';
+
+/** Mission milestones (§24.3): icon + word, never colour alone (NFR-A11Y-002). */
+export const MILESTONE_STATE_UI: Record<'achieved' | 'in_progress' | 'not_yet', { icon: string; label: string; cls: string }> = {
+  achieved: { icon: '✓', label: 'Đã xong', cls: 'border-emerald-400/40 bg-emerald-500/10 text-emerald-100' },
+  in_progress: { icon: '◐', label: 'Đang làm', cls: 'border-indigo-400/40 bg-indigo-500/10 text-indigo-100' },
+  not_yet: { icon: '○', label: 'Chưa', cls: 'border-white/10 bg-slate-800/60 text-slate-300' },
+};
+
+/** Learning-score criterion status (§24.4). */
+export const CRITERION_STATUS_UI: Record<'full' | 'partial' | 'none' | 'incomplete', { icon: string; label: string; cls: string }> = {
+  full: { icon: '✓', label: 'Đủ bằng chứng', cls: 'bg-emerald-500/15 text-emerald-200' },
+  partial: { icon: '◐', label: 'Một phần', cls: 'bg-sky-500/15 text-sky-200' },
+  none: { icon: '○', label: 'Chưa có bằng chứng', cls: 'bg-slate-700/60 text-slate-300' },
+  incomplete: { icon: '…', label: 'Chưa hoàn thành', cls: 'bg-amber-500/15 text-amber-200' },
+};
